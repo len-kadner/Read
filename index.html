@@ -298,50 +298,27 @@
         }
         .screen.active { display: flex; }
 
-        #screen-library.catalog-search-active {
-            overflow: hidden;
+        #screen-library {
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            padding-bottom: 7rem;
+            scrollbar-width: none;
         }
 
-        #screen-library.catalog-search-active > .px-6,
-        #screen-library.catalog-search-active > #filter-container,
-        #screen-library.catalog-search-active > #book-list-container {
-            display: none;
+        #screen-library::-webkit-scrollbar { display: none; }
+
+        #external-book-results {
+            max-height: min(16rem, 36vh);
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
         }
 
-        #screen-library.catalog-search-active > details {
-            position: absolute;
-            inset: 0;
-            display: block;
-            width: auto;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            border-radius: 0;
-            background: transparent;
+        #screen-library details[open] {
+            flex-shrink: 0;
         }
 
-        #screen-library.catalog-search-active > details > summary {
-            display: none;
-        }
-
-        #screen-library.catalog-search-active > details > div {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
-            box-sizing: border-box;
-        }
-
-        #screen-library.catalog-search-active #catalog-search-header {
-            display: flex;
-        }
-
-        #screen-library.catalog-search-active #external-book-results {
-            flex: 1;
-            min-height: 0;
-            max-height: none;
+        #screen-library details[open] > div {
+            max-height: min(28rem, 60vh);
             overflow-y: auto;
             overscroll-behavior-y: contain;
         }
@@ -724,26 +701,29 @@
                 </div>
             </div>
 
-            <details class="mx-6 mb-3 rounded-xl bg-app-surface">
-                <summary class="cursor-pointer px-4 py-3 text-sm font-bold text-app-text">Bücher aus Online-Katalogen laden</summary>
-                <div class="px-4 pb-4 min-h-0">
-                    <div id="catalog-search-header" class="hidden items-center justify-between gap-3 pb-4">
-                        <h1 class="text-xl font-bold text-app-text">Bücher suchen</h1>
-                        <button type="button" onclick="app.exitExternalBookSearch()" class="shrink-0 rounded-lg bg-app-surface px-4 py-2 text-sm font-bold text-app-text transition-colors hover:bg-app-surface-light">
-                            Zur Bibliothek
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-400 mb-3">Suche nur nach dem Titel. Gutenberg-Bücher werden aus dem jsDelivr-Spiegel geladen.</p>
-                    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                        <select id="book-source" aria-label="Buchquelle" class="col-span-2 min-h-11 w-full rounded-lg bg-app-bg px-3 py-2 text-sm text-app-text">
+            <details class="group mx-6 mb-4 overflow-hidden rounded-2xl border border-app-surface-light bg-app-surface shadow-lg">
+                <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-4 text-app-text marker:hidden">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-accent/15 text-app-accent" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block text-sm font-bold">Online-Kataloge durchsuchen</span>
+                        <span class="mt-0.5 block text-xs font-normal text-gray-400">Bücher aus Standard Ebooks und Gutenberg finden</span>
+                    </span>
+                    <svg class="h-5 w-5 shrink-0 text-gray-400 transition-transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                </summary>
+                <div class="no-scrollbar min-h-0 border-t border-app-surface-light px-4 pb-4 pt-4">
+                    <p class="mb-3 text-xs leading-relaxed text-gray-400">Suche nach Buchtiteln. Gutenberg-Texte werden über den jsDelivr-Spiegel geladen.</p>
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(9rem,0.4fr)_minmax(0,1fr)_auto]">
+                        <select id="book-source" aria-label="Buchquelle" class="min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-sm text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
                             <option value="standardebooks">Standard Ebooks</option>
                             <option value="gutenberg">Gutenberg-Spiegel</option>
                         </select>
-                        <input id="external-book-search" type="search" placeholder="Buchtitel" aria-label="Buchtitel suchen" onkeydown="if (event.key === 'Enter') app.searchExternalBooks()" class="min-h-11 min-w-0 rounded-lg bg-app-bg px-3 py-2 text-sm text-app-text placeholder-gray-500">
-                        <button onclick="app.searchExternalBooks()" class="min-h-11 rounded-lg bg-app-accent px-4 py-2 text-sm font-bold text-app-bg transition-transform active:scale-95">Suchen</button>
+                        <input id="external-book-search" type="search" placeholder="Nach Buchtitel suchen" aria-label="Buchtitel suchen" onkeydown="if (event.key === 'Enter') app.searchExternalBooks()" class="min-h-11 min-w-0 rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-sm text-app-text placeholder-gray-500 focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                        <button onclick="app.searchExternalBooks()" class="min-h-11 rounded-xl bg-app-accent px-5 py-2 text-sm font-bold text-app-bg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent active:scale-[0.98]">Suchen</button>
                     </div>
-                    <p id="external-book-status" class="mt-2 text-xs text-gray-400" aria-live="polite"></p>
-                    <div id="external-book-results" class="mt-2 max-h-48 space-y-2 overflow-y-auto no-scrollbar"></div>
+                    <p id="external-book-status" class="mt-3 text-sm text-gray-400" aria-live="polite"></p>
+                    <div id="external-book-results" class="mt-3 space-y-2 overflow-y-auto no-scrollbar"></div>
                 </div>
             </details>
 
@@ -1714,9 +1694,8 @@
                     status.textContent = 'Bitte gib einen Buchtitel ein.';
                     return;
                 }
-                document.getElementById('screen-library').classList.add('catalog-search-active');
                 document.querySelector('#screen-library details').open = true;
-                document.getElementById('global-bottom-nav').style.display = 'none';
+                results.setAttribute('aria-busy', 'true');
 
                 try {
                     const books = new Map();
@@ -1768,11 +1747,12 @@
                         return;
                     }
 
+                    results.setAttribute('aria-busy', 'false');
                     books.forEach(book => {
                         const row = document.createElement('div');
-                        row.className = 'flex flex-wrap items-center justify-between gap-3 rounded-lg bg-app-bg p-3';
+                        row.className = 'flex flex-col gap-3 rounded-xl border border-app-surface-light bg-app-bg p-3 transition-colors hover:border-gray-600 sm:flex-row sm:items-center sm:justify-between sm:gap-4';
                         const heading = document.createElement('p');
-                        heading.className = 'min-w-0 text-sm font-bold text-app-text';
+                        heading.className = 'min-w-0 flex-1 text-sm font-semibold leading-snug text-app-text';
                         heading.textContent = book.title;
                         if (book.author) {
                             const author = document.createElement('span');
@@ -1780,9 +1760,15 @@
                             author.textContent = book.author;
                             heading.appendChild(author);
                         }
+                        if (book.subjects?.length) {
+                            const subjects = document.createElement('span');
+                            subjects.className = 'mt-2 block truncate text-[11px] font-normal text-gray-500';
+                            subjects.textContent = book.subjects.slice(0, 2).join(' · ');
+                            heading.appendChild(subjects);
+                        }
                         const genreSelect = document.createElement('select');
                         genreSelect.setAttribute('aria-label', `Genre für „${book.title}“`);
-                        genreSelect.className = 'min-h-10 min-w-0 max-w-full rounded-lg bg-app-surface px-2 text-xs text-app-text';
+                        genreSelect.className = 'min-h-10 min-w-0 flex-1 rounded-lg border border-app-surface-light bg-app-surface px-3 text-xs text-app-text focus:border-app-accent focus:outline-none sm:max-w-44';
                         const automaticGenre = document.createElement('option');
                         automaticGenre.value = '';
                         automaticGenre.textContent = 'Genre automatisch';
@@ -1795,7 +1781,8 @@
                         });
                         genreSelect.value = this.detectBookGenre(book.title, book.author, ...(book.subjects || []));
                         const loadButton = document.createElement('button');
-                        loadButton.className = 'min-h-10 shrink-0 text-xs font-bold text-app-accent';
+                        loadButton.type = 'button';
+                        loadButton.className = 'min-h-10 shrink-0 rounded-lg bg-app-accent px-3 text-xs font-bold text-app-bg transition hover:brightness-110 active:scale-[0.98]';
                         loadButton.textContent = 'Laden & lesen';
                         loadButton.onclick = () => {
                             book.genre = genreSelect.value || null;
@@ -1806,25 +1793,33 @@
                             }
                         };
                         const actions = document.createElement('div');
-                        actions.className = 'flex min-w-0 items-center gap-2';
+                        actions.className = 'flex min-w-0 items-center gap-2 sm:w-auto sm:flex-none';
                         actions.append(genreSelect, loadButton);
                         row.append(heading, actions);
                         results.appendChild(row);
                     });
                     status.textContent = `${books.size} passende Titel für „${query}“ gefunden.`;
+                    requestAnimationFrame(() => {
+                        const library = document.getElementById('screen-library');
+                        const resultsRect = results.getBoundingClientRect();
+                        const navigationTop = document.getElementById('global-bottom-nav').getBoundingClientRect().top;
+                        const coveredHeight = resultsRect.bottom - navigationTop;
+                        if (coveredHeight > 0) {
+                            library.scrollBy({ top: coveredHeight + 16, behavior: 'smooth' });
+                        }
+                    });
                 } catch (error) {
                     console.error(`Buchsuche nach "${query}" fehlgeschlagen.`, error);
                     status.textContent = error instanceof TypeError
                         ? 'Der Katalog ist aus dem Browser nicht erreichbar. Prüfe deine Internetverbindung oder öffne die bereitgestellte Website.'
                         : error.message;
+                } finally {
+                    results.setAttribute('aria-busy', 'false');
                 }
             },
 
             exitExternalBookSearch() {
-                document.getElementById('screen-library').classList.remove('catalog-search-active');
                 document.querySelector('#screen-library details').open = false;
-                document.getElementById('global-bottom-nav').style.display = 'flex';
-                this.updateNavHighlight('library');
             },
 
             async readGutenbergMirrorBook(book) {
@@ -2054,7 +2049,7 @@
                 if (Number.isInteger(savedIndex)) {
                     return words.length ? Math.min(100, Math.floor(savedIndex / words.length * 100)) : 0;
                 }
-                return book.progress || 0;
+                return 0;
             },
 
             saveBookProgress() {
@@ -2727,10 +2722,7 @@
 
                 if (screenId !== 'library') {
                     const libraryScreen = document.getElementById('screen-library');
-                    if (libraryScreen.classList.contains('catalog-search-active')) {
-                        libraryScreen.classList.remove('catalog-search-active');
-                        libraryScreen.querySelector('details').open = false;
-                    }
+                    libraryScreen.querySelector('details').open = false;
                 }
 
                 // Screens umschalten
@@ -3144,10 +3136,8 @@
 
                     if (Number.isInteger(savedIndex) && savedIndex <= this.state.words.length) {
                         this.state.currentIndex = savedIndex;
-                    } else if (book.progress < 100) {
-                        this.state.currentIndex = Math.floor((book.progress / 100) * this.state.words.length);
                     } else {
-                        this.state.currentIndex = resetIfFinished ? 0 : this.state.words.length - 1;
+                        this.state.currentIndex = 0;
                     }
 
                     this.saveSetting('read-last-book', book.id);
