@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "READ. - Deine Lese-App",
+  "short_name": "READ.",
+  "description": "Lies Wort für Wort in deinem eigenen Tempo.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "any",
+  "background_color": "#181819",
+  "theme_color": "#181819",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
