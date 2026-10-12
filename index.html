@@ -1091,6 +1091,7 @@
         (() => {
             const SUPABASE_URL = 'https://qwctmkmlxvlpcxqwhqha.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_AId985eKb-XbK4l1aI8_Qw__F4kMgrz';
+            const AUTH_REDIRECT_URL = 'https://len-kadner.github.io/Read/';
             let supabaseClient = null;
             let supabaseClientLoad = null;
             let supabaseSdkLoad = null;
@@ -1300,10 +1301,9 @@
                         clearTimeout(cloudSaveTimer);
                         app.renderAuthStatus();
                     } else {
-                        const redirectUrl = new URL(window.location.pathname, window.location.origin).toString();
                         const { error } = await client.auth.signInWithOAuth({
                             provider: 'google',
-                            options: { redirectTo: redirectUrl }
+                            options: { redirectTo: AUTH_REDIRECT_URL }
                         });
                         if (error) throw error;
                     }
@@ -1359,19 +1359,19 @@
                         id: 1, 
                         title: 'Tschick', 
                         type: 'Roman', 
-                        progress: 42,
+                        progress: 0,
                         text: "Zwei Jahre später saßen wir im selben Lada. Die Sonne brannte durch die dreckige Frontscheibe. Tschick sah mich an, grinste leicht und sagte: 'Wir müssen hier weg. Ohne Karte. Ohne Plan.' Die Straße vor uns flimmerte in der Hitze. Alles roch nach altem Staub, Freiheit und ein bisschen nach Benzin. Ich hatte keine Ahnung, wie weit wir kommen würden, aber das war mir in diesem Moment völlig egal. Hauptsache weg. Der Motor stotterte kurz, fing sich dann aber wieder in einem monotonen Brummen. Es ging los." 
                     },
                     { 
                         id: 2, 
                         title: 'Eine kurze Geschichte der Menschheit', 
                         type: 'Sachbuch', 
-                        progress: 18,
+                        progress: 0,
                         text: "Vor etwa 70.000 Jahren begannen Organismen, die zur Art Homo sapiens gehörten, noch weitreichendere Strukturen zu bilden. Diese Kulturen veränderten die Welt grundlegend durch die kognitive Revolution. Wir lernten, über Dinge zu sprechen, die gar nicht existieren. Das war unser größter Vorteil gegenüber allen anderen Tieren."
                     },
-                    { id: 3, title: 'Krabat', type: 'Roman', progress: 71, text: "Es war zwischen Neujahr und dem Dreikönigstag, da geschah es zum ersten Mal. Ein Traum rief ihn zur Mühle im Koselbruch. Elf Raben saßen dort auf der Stange, und eine Stimme befahl ihm zu bleiben. So begann seine Zeit als Lehrjunge." },
-                    { id: 4, title: 'Was ist was: Weltall', type: 'Sachbuch', progress: 5, text: "Das Universum ist unvorstellbar groß und dehnt sich immer weiter aus. Sterne entstehen in riesigen Gaswolken, brennen Milliarden von Jahren und enden manchmal in gewaltigen Supernovae, die das Material für neue Welten ins All schleudern." },
-                    { id: 5, title: 'Die Welle', type: 'Roman', progress: 100, text: "Laurie Saunders saß im Redaktionsbüro der Schülerzeitung. Sie kaute nervös auf ihrem Stift herum. Das Experiment ihres Geschichtslehrers Mr. Ross hatte eine Dynamik angenommen, die niemand vorhersehen konnte. Macht durch Disziplin. Macht durch Gemeinschaft. Der Slogan hallte in ihrem Kopf nach." }
+                    { id: 3, title: 'Krabat', type: 'Roman', progress: 0, text: "Es war zwischen Neujahr und dem Dreikönigstag, da geschah es zum ersten Mal. Ein Traum rief ihn zur Mühle im Koselbruch. Elf Raben saßen dort auf der Stange, und eine Stimme befahl ihm zu bleiben. So begann seine Zeit als Lehrjunge." },
+                    { id: 4, title: 'Was ist was: Weltall', type: 'Sachbuch', progress: 0, text: "Das Universum ist unvorstellbar groß und dehnt sich immer weiter aus. Sterne entstehen in riesigen Gaswolken, brennen Milliarden von Jahren und enden manchmal in gewaltigen Supernovae, die das Material für neue Welten ins All schleudern." },
+                    { id: 5, title: 'Die Welle', type: 'Roman', progress: 0, text: "Laurie Saunders saß im Redaktionsbüro der Schülerzeitung. Sie kaute nervös auf ihrem Stift herum. Das Experiment ihres Geschichtslehrers Mr. Ross hatte eine Dynamik angenommen, die niemand vorhersehen konnte. Macht durch Disziplin. Macht durch Gemeinschaft. Der Slogan hallte in ihrem Kopf nach." }
                 ],
                 sprintSize: 200,
                 progressByBook: {},
