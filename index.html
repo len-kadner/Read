@@ -7,6 +7,8 @@
     <meta name="theme-color" content="#181819">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="READ.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
     <link rel="manifest" href="./manifest.webmanifest">
     
     <!-- Tailwind CSS -->
@@ -308,9 +310,8 @@
         #screen-library::-webkit-scrollbar { display: none; }
 
         #external-book-results {
-            max-height: min(16rem, 36vh);
-            overflow-y: auto;
-            overscroll-behavior-y: contain;
+            display: grid;
+            gap: 0.5rem;
         }
 
         #screen-library details[open] {
@@ -723,7 +724,7 @@
                         <button onclick="app.searchExternalBooks()" class="min-h-11 rounded-xl bg-app-accent px-5 py-2 text-sm font-bold text-app-bg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-accent active:scale-[0.98]">Suchen</button>
                     </div>
                     <p id="external-book-status" class="mt-3 text-sm text-gray-400" aria-live="polite"></p>
-                    <div id="external-book-results" class="mt-3 space-y-2 overflow-y-auto no-scrollbar"></div>
+                    <div id="external-book-results" class="mt-3"></div>
                 </div>
             </details>
 
@@ -1815,7 +1816,7 @@
                     results.setAttribute('aria-busy', 'false');
                     books.forEach(book => {
                         const row = document.createElement('div');
-                        row.className = 'flex flex-col gap-3 rounded-xl border border-app-surface-light bg-app-bg p-3 transition-colors hover:border-gray-600 sm:flex-row sm:items-center sm:justify-between sm:gap-4';
+                        row.className = 'flex min-w-0 flex-col gap-3 rounded-xl border border-app-surface-light bg-app-bg p-3 transition-colors hover:border-gray-600 sm:flex-row sm:items-center sm:justify-between sm:gap-4';
                         const heading = document.createElement('p');
                         heading.className = 'min-w-0 flex-1 text-sm font-semibold leading-snug text-app-text';
                         heading.textContent = book.title;
@@ -1833,7 +1834,7 @@
                         }
                         const genreSelect = document.createElement('select');
                         genreSelect.setAttribute('aria-label', `Genre für „${book.title}“`);
-                        genreSelect.className = 'min-h-10 min-w-0 flex-1 rounded-lg border border-app-surface-light bg-app-surface px-3 text-xs text-app-text focus:border-app-accent focus:outline-none sm:max-w-44';
+                        genreSelect.className = 'min-h-11 min-w-0 w-full rounded-lg border border-app-surface-light bg-app-surface px-3 text-xs text-app-text focus:border-app-accent focus:outline-none sm:w-44 sm:flex-none';
                         const automaticGenre = document.createElement('option');
                         automaticGenre.value = '';
                         automaticGenre.textContent = 'Genre automatisch';
@@ -1847,7 +1848,7 @@
                         genreSelect.value = this.detectBookGenre(book.title, book.author, ...(book.subjects || []));
                         const loadButton = document.createElement('button');
                         loadButton.type = 'button';
-                        loadButton.className = 'min-h-10 shrink-0 rounded-lg bg-app-accent px-3 text-xs font-bold text-app-bg transition hover:brightness-110 active:scale-[0.98]';
+                        loadButton.className = 'min-h-11 shrink-0 whitespace-nowrap rounded-lg bg-app-accent px-4 text-xs font-bold text-app-bg transition hover:brightness-110 active:scale-[0.98]';
                         loadButton.textContent = 'Laden & lesen';
                         loadButton.onclick = () => {
                             book.genre = genreSelect.value || null;
@@ -1858,21 +1859,12 @@
                             }
                         };
                         const actions = document.createElement('div');
-                        actions.className = 'flex min-w-0 items-center gap-2 sm:w-auto sm:flex-none';
+                        actions.className = 'grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:w-auto sm:flex-none';
                         actions.append(genreSelect, loadButton);
                         row.append(heading, actions);
                         results.appendChild(row);
                     });
                     status.textContent = `${books.size} passende Titel für „${query}“ gefunden.`;
-                    requestAnimationFrame(() => {
-                        const library = document.getElementById('screen-library');
-                        const resultsRect = results.getBoundingClientRect();
-                        const navigationTop = document.getElementById('global-bottom-nav').getBoundingClientRect().top;
-                        const coveredHeight = resultsRect.bottom - navigationTop;
-                        if (coveredHeight > 0) {
-                            library.scrollBy({ top: coveredHeight + 16, behavior: 'smooth' });
-                        }
-                    });
                 } catch (error) {
                     console.error(`Buchsuche nach "${query}" fehlgeschlagen.`, error);
                     status.textContent = error instanceof TypeError
@@ -2282,15 +2274,23 @@
                     throw new Error('Die Lesepräferenz im Cloud-Profil ist ungültig.');
                 }
 
-                const sceneByBook = { ...this.state.sceneByBook };
+                const availableBookIds = new Set(books.map(book => String(book.id)));
+                const sceneByBook = Object.fromEntries(
+                    Object.entries(this.state.sceneByBook)
+                        .filter(([bookId, scene]) =>
+                            availableBookIds.has(bookId) && ['coast', 'forest', 'mountains'].includes(scene))
+                );
                 if (cloudData.sceneByBook !== undefined) {
-                    if (!isRecord(cloudData.sceneByBook) ||
-                        Object.entries(cloudData.sceneByBook).some(([bookId, scene]) =>
-                            !books.some(book => String(book.id) === bookId) ||
-                            !['coast', 'forest', 'mountains'].includes(scene))) {
+                    if (!isRecord(cloudData.sceneByBook)) {
                         throw new Error('Die Buchszenen im Cloud-Profil sind ungültig.');
                     }
-                    Object.assign(sceneByBook, cloudData.sceneByBook);
+                    Object.entries(cloudData.sceneByBook).forEach(([bookId, scene]) => {
+                        if (!availableBookIds.has(bookId)) return;
+                        if (!['coast', 'forest', 'mountains'].includes(scene)) {
+                            throw new Error('Die Buchszenen im Cloud-Profil sind ungültig.');
+                        }
+                        sceneByBook[bookId] = scene;
+                    });
                 }
 
                 this.state.books = books;
