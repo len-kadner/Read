@@ -742,7 +742,7 @@
                 <div class="flex items-center space-x-4 mb-8">
                     <div class="w-16 h-16 bg-app-accent rounded-full flex items-center justify-center text-app-bg text-3xl font-bold">L</div>
                     <div>
-                        <h2 class="text-xl font-bold text-app-text">Len</h2>
+                        <h2 id="profile-display-name" class="text-xl font-bold text-app-text">Leser</h2>
                         <p id="profile-level" class="text-sm text-gray-400 font-medium">Level 1 Leser</p>
                     </div>
                 </div>
@@ -1072,6 +1072,15 @@
             const SUPABASE_URL = 'https://qwctmkmlxvlpcxqwhqha.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_AId985eKb-XbK4l1aI8_Qw__F4kMgrz';
             const AUTH_REDIRECT_URL = 'https://len-kadner.github.io/Read/';
+            const CLOUD_ONLY_SETTING_KEYS = new Set([
+                'read-progress',
+                'read-last-book',
+                'read-total-words',
+                'read-streak',
+                'read-gamification',
+                'read-guest-profile'
+            ]);
+            window.isCloudOnlySetting = key => CLOUD_ONLY_SETTING_KEYS.has(key);
             let supabaseClient = null;
             let supabaseClientLoad = null;
             let supabaseSdkLoad = null;
@@ -1081,6 +1090,53 @@
             let activeCloudUserId = null;
             let cloudLoadInProgress = null;
             let authInitialization = null;
+            window.clearLocalReadingProgress = function clearLocalReadingProgress() {
+                try {
+                    CLOUD_ONLY_SETTING_KEYS.forEach(key => localStorage.removeItem(key));
+                    const storedBooks = localStorage.getItem('read-imported-books');
+                    if (storedBooks !== null) {
+                        const books = JSON.parse(storedBooks);
+                        if (!Array.isArray(books)) throw new Error('Gespeicherte Bücherliste ist kein Array.');
+                        localStorage.setItem('read-imported-books', JSON.stringify(
+                            books.map(book => {
+                                const savedBook = { ...book };
+                                delete savedBook.progress;
+                                return savedBook;
+                            })
+                        ));
+                    }
+                } catch (error) {
+                    console.error('Lokal gespeicherte Lesefortschritte konnten nicht entfernt werden.', error);
+                }
+            };
+
+            function resetReadingProgress() {
+                clearTimeout(cloudSaveTimer);
+                activeCloudUserId = null;
+                app.state.authSession = null;
+                app.state.cloudSyncReady = false;
+                app.state.progressByBook = {};
+                app.state.totalWordsRead = 0;
+                app.state.streakDays = 0;
+                app.state.lastReadDate = null;
+                app.state.xpPoints = 0;
+                app.state.dailyChallengeDate = null;
+                app.state.dailyChallengeWords = 0;
+                app.state.dailyChallengeCompleted = false;
+                app.state.books = app.state.books.map(book => ({ ...book, progress: 0 }));
+                app.state.currentBookId = app.state.books[0]?.id ?? null;
+                app.state.currentIndex = 0;
+                app.state.words = [];
+                app.state.paragraphBreaks = new Set();
+                window.clearLocalReadingProgress();
+                if (app.state.currentBookId !== null) app.loadBook(app.state.currentBookId, false);
+                app.renderBooks();
+                app.renderProfileStats();
+                app.renderStreakStats();
+                app.renderGamification();
+                app.renderAchievements();
+                app.renderAuthStatus();
+            }
 
             function loadSupabaseSdk() {
                 if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -1175,7 +1231,6 @@
             };
 
             async function syncCloudForSession(session) {
-                app.state.authSession = session;
                 const userId = session.user.id;
                 if (activeCloudUserId === userId && app.state.cloudSyncReady) {
                     app.renderAuthStatus();
@@ -1183,6 +1238,8 @@
                 }
                 if (cloudLoadInProgress?.userId === userId) return cloudLoadInProgress.promise;
 
+                if (activeCloudUserId !== userId) resetReadingProgress();
+                app.state.authSession = session;
                 app.state.cloudSyncReady = false;
                 app.renderAuthStatus('loading', 'Cloud-Daten werden geladen …');
                 const promise = (async () => {
@@ -1221,16 +1278,15 @@
                     try {
                         const client = await getSupabaseClient();
                         if (!authStateSubscription) {
-                            const { data, error } = client.auth.onAuthStateChange((_event, session) => {
+                            const { data, error } = client.auth.onAuthStateChange((event, session) => {
                                 Promise.resolve().then(() => {
                                     if (session) {
                                         syncCloudForSession(session);
-                                    } else {
-                                        clearTimeout(cloudSaveTimer);
-                                        activeCloudUserId = null;
-                                        app.state.authSession = null;
-                                        app.state.cloudSyncReady = false;
+                                    } else if (event === 'INITIAL_SESSION') {
+                                        window.clearLocalReadingProgress();
                                         app.renderAuthStatus();
+                                    } else {
+                                        resetReadingProgress();
                                     }
                                 }).catch(error => {
                                     console.error('Supabase-Anmeldestatus konnte nicht verarbeitet werden.', error);
@@ -1247,6 +1303,7 @@
                         } else {
                             app.state.authSession = null;
                             app.state.cloudSyncReady = false;
+                            window.clearLocalReadingProgress();
                             app.renderAuthStatus();
                         }
                     } catch (error) {
@@ -1275,11 +1332,7 @@
                     if (data.session) {
                         const { error } = await client.auth.signOut();
                         if (error) throw error;
-                        app.state.authSession = null;
-                        app.state.cloudSyncReady = false;
-                        activeCloudUserId = null;
-                        clearTimeout(cloudSaveTimer);
-                        app.renderAuthStatus();
+                        resetReadingProgress();
                     } else {
                         const { error } = await client.auth.signInWithOAuth({
                             provider: 'google',
@@ -1371,6 +1424,7 @@
             ],
 
             init() {
+                window.clearLocalReadingProgress();
                 const savedRemovedBookIds = this.readSetting('read-removed-books');
                 if (savedRemovedBookIds !== null) {
                     try {
@@ -1540,10 +1594,21 @@
                         }
                         this.addBook(book);
                     });
+                    this.persistImportedBooks(imported);
                 } catch (error) {
                     console.error('Importierte Bücher konnten nicht geladen werden.', error);
                     this.updateBooksImportStatus('Gespeicherte Bücher konnten nicht geladen werden. Bitte importiere den Books-Ordner erneut.');
                 }
+            },
+
+            persistImportedBooks(books) {
+                this.saveSetting('read-imported-books', JSON.stringify(
+                    books.map(book => {
+                        const savedBook = { ...book };
+                        delete savedBook.progress;
+                        return savedBook;
+                    })
+                ));
             },
 
             async loadBookManifest() {
@@ -1860,7 +1925,7 @@
                         if (!Array.isArray(storedBooks)) throw new Error('Gespeicherte Bücherliste ist kein Array.');
                         const storedById = new Map(storedBooks.map(storedBook => [storedBook.id, storedBook]));
                         storedById.set(id, this.state.books.find(item => String(item.id) === id));
-                        localStorage.setItem('read-imported-books', JSON.stringify(Array.from(storedById.values())));
+                        this.persistImportedBooks(Array.from(storedById.values()));
                     } catch (storageError) {
                         console.error(`Gutenberg-Spiegel-Buch "${book.title}" konnte nicht gespeichert werden.`, storageError);
                         saved = false;
@@ -1935,7 +2000,7 @@
                         if (!Array.isArray(storedBooks)) throw new Error('Gespeicherte Bücherliste ist kein Array.');
                         const storedById = new Map(storedBooks.map(storedBook => [storedBook.id, storedBook]));
                         storedById.set(id, this.state.books.find(item => String(item.id) === id));
-                        localStorage.setItem('read-imported-books', JSON.stringify(Array.from(storedById.values())));
+                        this.persistImportedBooks(Array.from(storedById.values()));
                     } catch (storageError) {
                         console.error(`Standard-Ebooks-Buch "${title}" konnte nicht gespeichert werden.`, storageError);
                         saved = false;
@@ -2002,7 +2067,7 @@
                         const existing = JSON.parse(this.readSetting('read-imported-books') || '[]');
                         const merged = new Map(existing.map(book => [book.id, book]));
                         imported.forEach(book => merged.set(book.id, book));
-                        localStorage.setItem('read-imported-books', JSON.stringify(Array.from(merged.values())));
+                        this.persistImportedBooks(Array.from(merged.values()));
                     } catch (error) {
                         console.error('Importierte Bücher konnten nicht dauerhaft gespeichert werden.', error);
                         errors.push('Bücher konnten im Browser-Speicher nicht gespeichert werden; sie sind nur bis zum Neuladen verfügbar.');
@@ -2024,7 +2089,7 @@
                     this.state.removedBookIds.has(String(book.id))) return false;
                 const existingIndex = this.state.books.findIndex(existing => String(existing.id) === String(book.id));
                 if (existingIndex >= 0) {
-                    this.state.books[existingIndex] = { ...this.state.books[existingIndex], ...book };
+                    this.state.books[existingIndex] = { ...this.state.books[existingIndex], ...book, progress: 0 };
                     window.queueCloudSave();
                     return false;
                 }
@@ -2258,7 +2323,7 @@
                 this.state.currentIndex = 0;
                 if (this.state.currentBookId !== null) this.loadBook(this.state.currentBookId, false);
 
-                this.saveSetting('read-imported-books', JSON.stringify(books));
+                this.persistImportedBooks(books);
                 this.saveSetting('read-progress', JSON.stringify(progressByBook));
                 this.saveSetting('read-removed-books', JSON.stringify(Array.from(removedBookIds)));
                 this.saveSetting('read-book-scenes', JSON.stringify(sceneByBook));
@@ -2297,16 +2362,22 @@
                 const statusText = document.getElementById('auth-status-text');
                 const button = document.getElementById('auth-action-btn');
                 const buttonText = document.getElementById('auth-btn-text');
-                if (!statusText || !button || !buttonText) return;
-
                 const session = this.state.authSession;
                 const user = session?.user;
                 const signedIn = Boolean(user);
+                const metadata = user?.user_metadata || {};
+                const metadataName = [metadata.full_name, metadata.name, metadata.given_name]
+                    .find(name => typeof name === 'string' && name.trim());
+                const displayName = metadataName?.trim() || user?.email?.split('@')[0] || 'Leser';
+                const profileName = document.getElementById('profile-display-name');
+                if (profileName) profileName.textContent = displayName;
+                if (!statusText || !button || !buttonText) return;
+
                 statusText.textContent = message || (status === 'loading'
                     ? 'Cloud-Konto wird geladen …'
                     : signedIn
                         ? user.email || 'Mit Google angemeldet'
-                        : 'Nicht angemeldet (Lokaler Modus)');
+                        : 'Nicht angemeldet – Fortschritt wird nicht gespeichert');
                 buttonText.textContent = status === 'loading'
                     ? 'Bitte warten …'
                     : signedIn ? 'Abmelden' : 'Mit Google anmelden';
@@ -2508,7 +2579,9 @@
 
             saveSetting(key, value) {
                 try {
-                    localStorage.setItem(key, value);
+                    if (!window.isCloudOnlySetting(key)) {
+                        localStorage.setItem(key, value);
+                    }
                 } catch (error) {
                     console.error(`Einstellung "${key}" konnte nicht gespeichert werden.`, error);
                 }
@@ -2915,9 +2988,9 @@
                     try {
                         const importedBooks = JSON.parse(storedBooks);
                         if (!Array.isArray(importedBooks)) throw new Error('Gespeicherte Bücherliste ist kein Array.');
-                        this.saveSetting('read-imported-books', JSON.stringify(
+                        this.persistImportedBooks(
                             importedBooks.filter(importedBook => String(importedBook.id) !== key)
-                        ));
+                        );
                     } catch (error) {
                         console.error(`„${book.title}“ konnte nicht aus den gespeicherten Büchern entfernt werden.`, error);
                     }
