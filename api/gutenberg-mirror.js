@@ -2,6 +2,7 @@ const MAX_SEARCH_BYTES = 2 * 1024 * 1024;
 const MAX_TREE_BYTES = 4 * 1024 * 1024;
 const MAX_BOOK_BYTES = 25 * 1024 * 1024;
 const UPSTREAM_TIMEOUT_MS = 25000;
+const findBookTextFile = require('./book-text-file.cjs');
 
 function sendError(res, status, message) {
     res.setHeader('Cache-Control', 'no-store');
@@ -92,14 +93,6 @@ async function fetchText(url, maxBytes, headers = {}) {
     }
 }
 
-function getBookTextFile(files, bookId) {
-    const textFiles = files.filter(file => file.type === 'file' && file.name.toLowerCase().endsWith('.txt'));
-    return textFiles.find(file => file.name === `${bookId}-0.txt`)
-        || textFiles.find(file => file.name === `${bookId}.txt`)
-        || textFiles.find(file => new RegExp(`^${bookId}-\\d+\\.txt$`, 'i').test(file.name))
-        || textFiles.find(file => new RegExp(`^${bookId}[^/]*\\.txt$`, 'i').test(file.name));
-}
-
 module.exports = async function handler(req, res) {
     if (req.method !== 'GET') {
         res.setHeader('Allow', 'GET');
@@ -163,7 +156,7 @@ module.exports = async function handler(req, res) {
                 return sendError(res, 502, 'Der jsDelivr-Spiegel hat keine gültige Dateiliste geliefert.');
             }
 
-            const textFile = getBookTextFile(tree.files, bookId);
+            const textFile = findBookTextFile(tree.files, bookId);
             if (!textFile) {
                 return sendError(res, 404, 'Keine TXT-Datei für dieses Buch im jsDelivr-Spiegel gefunden.');
             }
