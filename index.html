@@ -419,50 +419,138 @@
             z-index: 5;
             pointer-events: none;
             overflow: hidden;
-            opacity: 0.32;
+            isolation: isolate;
+            opacity: 0.44;
             display: none;
-            background: linear-gradient(180deg, rgb(16 26 48 / 0.2), rgb(34 53 70 / 0.08) 60%, rgb(11 29 42 / 0.35));
+            background:
+                radial-gradient(ellipse at 50% 42%, rgb(74 99 130 / 0.28), transparent 62%),
+                linear-gradient(180deg, rgb(20 34 62 / 0.4), rgb(37 57 77 / 0.14) 58%, rgb(11 29 42 / 0.52));
+        }
+
+        #celestial-animation::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(ellipse at center, transparent 18%, rgb(12 15 22 / 0.12) 100%);
+        }
+
+        .starfield,
+        .sky-clouds,
+        .celestial-wheel,
+        .scenic-horizon,
+        .bird-flock,
+        .forest-landscape,
+        .mountain-landscape,
+        .fireflies {
+            z-index: 1;
+        }
+
+        .starfield {
+            position: absolute;
+            inset: 0;
+            opacity: 0.82;
+            background-image:
+                radial-gradient(1px 1px at 7% 19%, rgb(255 244 220 / 0.9) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 18% 36%, rgb(222 234 255 / 0.8) 50%, transparent 100%),
+                radial-gradient(1px 1px at 31% 14%, rgb(255 244 220 / 0.9) 50%, transparent 100%),
+                radial-gradient(1px 1px at 43% 29%, rgb(222 234 255 / 0.8) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 56% 11%, rgb(255 244 220 / 0.9) 50%, transparent 100%),
+                radial-gradient(1px 1px at 68% 34%, rgb(222 234 255 / 0.8) 50%, transparent 100%),
+                radial-gradient(1px 1px at 79% 17%, rgb(255 244 220 / 0.9) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 92% 41%, rgb(222 234 255 / 0.8) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 12% 58%, rgb(255 244 220 / 0.82) 50%, transparent 100%),
+                radial-gradient(1px 1px at 24% 77%, rgb(222 234 255 / 0.82) 50%, transparent 100%),
+                radial-gradient(1px 1px at 38% 63%, rgb(255 244 220 / 0.78) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 51% 86%, rgb(222 234 255 / 0.78) 50%, transparent 100%),
+                radial-gradient(1px 1px at 64% 71%, rgb(255 244 220 / 0.82) 50%, transparent 100%),
+                radial-gradient(1.5px 1.5px at 76% 58%, rgb(222 234 255 / 0.82) 50%, transparent 100%),
+                radial-gradient(1px 1px at 87% 82%, rgb(255 244 220 / 0.78) 50%, transparent 100%),
+                radial-gradient(1px 1px at 96% 64%, rgb(222 234 255 / 0.8) 50%, transparent 100%);
+            animation: starfield-breathe 9s ease-in-out infinite alternate;
+        }
+
+        .sky-clouds {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            opacity: 0.82;
+            -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 68%);
+            mask-image: linear-gradient(180deg, #000 0%, transparent 68%);
+        }
+
+        .sky-clouds span {
+            position: absolute;
+            top: var(--cloud-top, 18%);
+            left: -38%;
+            width: clamp(16rem, 48vw, 34rem);
+            height: clamp(3rem, 11vh, 7rem);
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgb(190 211 235 / 0.5), rgb(135 164 196 / 0.22) 48%, transparent 72%);
+            filter: blur(0.9rem);
+            animation: cloud-drift var(--cloud-duration, 42s) ease-in-out var(--cloud-delay, 0s) infinite alternate;
+        }
+
+        .sky-clouds span:nth-child(2) {
+            top: 31%;
+            left: 42%;
+            width: clamp(13rem, 34vw, 25rem);
+            opacity: 0.65;
+            --cloud-delay: -18s;
+        }
+
+        .sky-clouds span:nth-child(3) {
+            top: 43%;
+            left: 5%;
+            width: clamp(18rem, 54vw, 38rem);
+            opacity: 0.5;
+            --cloud-duration: 72s;
+            --cloud-delay: -24s;
         }
         
         .celestial-wheel {
             position: absolute;
-            width: 13rem;
-            height: 13rem;
-            top: 8%;
-            left: 8%;
-            opacity: 0.3;
-            animation: sky-drift 72s ease-in-out infinite alternate;
+            width: clamp(10rem, 28vw, 18rem);
+            height: clamp(10rem, 28vw, 18rem);
+            top: clamp(2rem, 8%, 6rem);
+            left: clamp(1rem, 8%, 7rem);
+            opacity: 0.38;
+            animation: sky-drift 84s ease-in-out infinite alternate;
         }
 
         .sun {
             position: absolute;
             top: 0;
             left: 0;
-            width: 4rem;
-            height: 4rem;
+            width: clamp(2.75rem, 7vw, 4.5rem);
+            height: clamp(2.75rem, 7vw, 4.5rem);
             border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #fff3cc, #ffd07d 48%, #ffad69);
-            box-shadow: 0 0 38px rgb(255 194 126 / 0.35);
+            background: radial-gradient(circle at 35% 35%, #fff8df 0%, #ffd995 42%, #efa977 78%, rgb(239 169 119 / 0) 100%);
+            box-shadow: 0 0 2rem rgb(255 194 126 / 0.28), 0 0 5rem rgb(255 194 126 / 0.12);
+            animation: sun-glow 9s ease-in-out infinite alternate;
         }
 
         .moon-stars {
             position: absolute;
             top: 0;
             right: 0;
-            width: 2.5rem;
-            height: 2.5rem;
+            width: clamp(2rem, 5vw, 3rem);
+            height: clamp(2rem, 5vw, 3rem);
             border-radius: 50%;
-            box-shadow: -0.65rem 0.3rem 0 -0.1rem #e7e6dd;
-            opacity: 0.65;
+            background: radial-gradient(circle at 35% 30%, #fffdf4, #dce5f2 70%, #b4c4da);
+            box-shadow: -0.55rem 0.25rem 0 -0.45rem rgb(16 26 48 / 0.92), 0 0 1.5rem rgb(206 222 255 / 0.32);
+            opacity: 0.74;
+            animation: moon-glow 11s ease-in-out infinite alternate;
         }
 
         .stars {
             position: absolute;
-            width: 0.2rem;
-            height: 0.2rem;
+            width: var(--star-size, 0.2rem);
+            height: var(--star-size, 0.2rem);
             border-radius: 50%;
-            background: #fff4ce;
-            box-shadow: 0 0 7px rgb(255 244 206 / 0.8);
+            background: #fff7df;
+            box-shadow: 0 0 0.45rem rgb(255 244 206 / 0.9), 0 0 1rem rgb(189 213 255 / 0.32);
+            animation: star-twinkle var(--twinkle-duration, 4s) ease-in-out var(--twinkle-delay, 0s) infinite alternate;
         }
 
         .scenic-horizon {
@@ -473,6 +561,8 @@
             height: 21%;
             border-radius: 50% 50% 0 0;
             background: linear-gradient(180deg, rgb(69 105 118 / 0.18), rgb(19 39 52 / 0.55));
+            transform-origin: center bottom;
+            animation: horizon-sway 18s ease-in-out infinite alternate;
         }
 
         .scenic-horizon::before,
@@ -484,10 +574,19 @@
             height: 45%;
             border-radius: 50%;
             background: rgb(104 141 145 / 0.12);
+            animation: distant-wave 16s ease-in-out infinite alternate;
         }
 
         .scenic-horizon::before { top: 16%; }
-        .scenic-horizon::after { top: 40%; background: rgb(47 80 94 / 0.2); }
+        .scenic-horizon::after {
+            top: 40%;
+            height: 32%;
+            background: repeating-linear-gradient(180deg, transparent 0 7px, rgb(255 224 169 / 0.16) 8px 9px, transparent 10px 15px);
+            -webkit-mask-image: linear-gradient(90deg, transparent, #000 32%, #000 72%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 32%, #000 72%, transparent);
+            filter: blur(0.1rem);
+            animation: reflection-shimmer 5.5s ease-in-out infinite alternate;
+        }
 
         .bird-flock {
             position: absolute;
@@ -495,24 +594,40 @@
             left: 0;
             width: 100%;
             height: 2rem;
-            color: rgb(230 232 220 / 0.72);
-            animation: birds-cross 52s linear infinite;
+            color: rgb(230 232 220 / 0.88);
+            animation: birds-cross 32s linear infinite;
         }
 
         .bird-flock svg {
             position: absolute;
-            width: 2rem;
-            height: 1.2rem;
+            width: 2.35rem;
+            height: 1.4rem;
             fill: none;
             stroke: currentColor;
             stroke-linecap: round;
-            stroke-width: 2;
+            stroke-width: 1.8;
+            animation: bird-bob 2.7s ease-in-out infinite;
+        }
+
+        .bird-flock svg path {
+            transform-box: view-box;
+            transform-origin: 20px 10px;
+        }
+
+        .bird-flock svg path:first-child {
+            animation: bird-wing-left 1.15s ease-in-out infinite alternate;
+        }
+
+        .bird-flock svg path:last-child {
+            animation: bird-wing-right 1.15s ease-in-out infinite alternate;
         }
 
         .bird-flock svg:nth-child(1) { top: 0.5rem; left: 16%; }
-        .bird-flock svg:nth-child(2) { top: 0; left: 22%; transform: scale(0.7); }
-        .bird-flock svg:nth-child(3) { top: 0.8rem; left: 28%; transform: scale(0.55); }
-        .bird-flock.reverse { top: 38%; animation-name: birds-cross-reverse; animation-duration: 64s; animation-delay: -19s; opacity: 0.4; }
+        .bird-flock svg:nth-child(2) { top: 0; left: 23%; scale: 0.72; animation-delay: -0.8s; }
+        .bird-flock svg:nth-child(3) { top: 0.8rem; left: 30%; scale: 0.58; animation-delay: -1.5s; }
+        .bird-flock svg:nth-child(2) path { animation-delay: -0.3s; }
+        .bird-flock svg:nth-child(3) path { animation-delay: -0.65s; }
+        .bird-flock.reverse { top: 38%; animation-name: birds-cross-reverse; animation-duration: 43s; animation-delay: -19s; opacity: 0.56; }
 
         .lighthouse {
             position: absolute;
@@ -520,21 +635,25 @@
             bottom: 7%;
             width: 4.2rem;
             height: 7.5rem;
-            color: rgb(230 222 200 / 0.5);
+            color: rgb(242 230 204 / 0.72);
+            filter: drop-shadow(0 0 0.7rem rgb(255 220 151 / 0.18));
         }
 
         .lighthouse-beam {
             position: absolute;
-            right: 3.3rem;
-            bottom: 9rem;
-            width: 8rem;
-            height: 5rem;
-            transform-origin: 100% 100%;
-            transform: rotate(-22deg);
-            background: linear-gradient(0deg, rgb(255 231 164 / 0.18), rgb(255 231 164 / 0));
-            clip-path: polygon(100% 100%, 0 0, 100% 0);
-            animation: beam-sweep 20s ease-in-out infinite alternate;
+            right: calc(7% + 2.1rem);
+            bottom: calc(7% + 2.25rem);
+            width: clamp(12rem, 38vw, 30rem);
+            height: clamp(6rem, 16vh, 11rem);
+            transform-origin: 100% 50%;
+            background: linear-gradient(90deg, rgb(255 231 164 / 0.02), rgb(255 231 164 / 0.09) 58%, rgb(255 231 164 / 0.58));
+            clip-path: polygon(100% 44%, 0 0, 0 100%, 100% 56%);
+            animation: beam-sweep 13s ease-in-out infinite alternate;
+            filter: blur(0.15rem);
+            z-index: 2;
         }
+
+        .lighthouse { z-index: 3; }
 
         .forest-landscape,
         .mountain-landscape,
@@ -565,6 +684,7 @@
             background:
                 conic-gradient(from 150deg at 12% 0%, transparent 0 30%, rgb(26 58 53 / 0.72) 30% 70%, transparent 70%) 0 0 / 5rem 100% repeat-x,
                 conic-gradient(from 150deg at 50% 0%, transparent 0 30%, rgb(34 72 62 / 0.78) 30% 70%, transparent 70%) 2.5rem 1rem / 6rem 100% repeat-x;
+            animation: forest-sway 34s ease-in-out infinite alternate;
         }
 
         .forest-landscape::after {
@@ -588,6 +708,8 @@
         .fireflies span:nth-child(2) { left: 43%; top: 67%; animation-delay: -5s; }
         .fireflies span:nth-child(3) { left: 73%; top: 48%; animation-delay: -1s; }
         .fireflies span:nth-child(4) { left: 86%; top: 72%; animation-delay: -4s; }
+        .fireflies span:nth-child(5) { left: 31%; top: 78%; animation-delay: -7s; }
+        .fireflies span:nth-child(6) { left: 62%; top: 59%; animation-delay: -3.5s; }
 
         .mountain-landscape {
             background: linear-gradient(180deg, rgb(46 71 111 / 0.12), rgb(181 151 142 / 0.08) 55%, rgb(28 44 69 / 0.58));
@@ -602,6 +724,7 @@
             bottom: 4%;
             height: 42%;
             background: linear-gradient(145deg, transparent 0 34%, rgb(89 105 133 / 0.46) 34% 65%, transparent 65%) 0 0 / 15rem 100% repeat-x;
+            animation: mountain-drift 48s ease-in-out infinite alternate;
         }
 
         .mountain-landscape::after {
@@ -625,23 +748,93 @@
         .scene-forest .celestial-wheel { opacity: 0.12; }
 
         @keyframes sky-drift {
-            from { transform: translate3d(0, 0, 0); }
-            to { transform: translate3d(2rem, 0.8rem, 0); }
+            from { transform: translate3d(-0.35rem, 0.2rem, 0) rotate(-2deg); }
+            to { transform: translate3d(1.25rem, 0.9rem, 0) rotate(2deg); }
+        }
+
+        @keyframes starfield-breathe {
+            from { opacity: 0.48; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.025); }
+        }
+
+        @keyframes cloud-drift {
+            from { transform: translate3d(-4vw, 0.5rem, 0) scale(0.96); }
+            to { transform: translate3d(45vw, -1rem, 0) scale(1.08); }
+        }
+
+        @keyframes star-twinkle {
+            from { opacity: 0.36; transform: scale(0.72); }
+            to { opacity: 1; transform: scale(1.12); }
+        }
+
+        @keyframes sun-glow {
+            from { filter: brightness(0.92); }
+            to { filter: brightness(1.08); }
+        }
+
+        @keyframes moon-glow {
+            from { opacity: 0.58; }
+            to { opacity: 0.86; }
+        }
+
+        @keyframes horizon-sway {
+            from { transform: scaleX(1) translateY(0); }
+            to { transform: scaleX(1.04) translateY(-0.55rem); }
+        }
+
+        @keyframes distant-wave {
+            from { transform: translate3d(-1%, 0, 0); }
+            to { transform: translate3d(1%, -0.35rem, 0); }
+        }
+
+        @keyframes reflection-shimmer {
+            from { transform: translate3d(-0.5rem, 0, 0) scaleY(0.82); opacity: 0.26; }
+            to { transform: translate3d(0.6rem, 0.25rem, 0) scaleY(1.08); opacity: 0.62; }
+        }
+
+        @keyframes forest-sway {
+            from { transform: translate3d(-0.35rem, 0, 0); }
+            to { transform: translate3d(0.35rem, 0, 0); }
+        }
+
+        @keyframes mountain-drift {
+            from { transform: translate3d(-0.5rem, 0, 0); }
+            to { transform: translate3d(0.5rem, -0.2rem, 0); }
+        }
+
+        @keyframes bird-wing-left {
+            from { transform: rotate(-16deg); }
+            to { transform: rotate(13deg); }
+        }
+
+        @keyframes bird-wing-right {
+            from { transform: rotate(16deg); }
+            to { transform: rotate(-13deg); }
+        }
+
+        @keyframes bird-bob {
+            0%, 100% { translate: 0 0; }
+            50% { translate: 0 -0.3rem; }
         }
 
         @keyframes birds-cross {
-            from { transform: translateX(-45vw); }
-            to { transform: translateX(105vw); }
+            from { transform: translate3d(-45vw, 0, 0) rotate(-2deg); }
+            30% { transform: translate3d(8vw, -0.7rem, 0) rotate(1deg); }
+            68% { transform: translate3d(63vw, 0.45rem, 0) rotate(-1deg); }
+            to { transform: translate3d(105vw, 0, 0) rotate(2deg); }
         }
 
         @keyframes birds-cross-reverse {
-            from { transform: translateX(105vw) scaleX(-1); }
-            to { transform: translateX(-45vw) scaleX(-1); }
+            from { transform: translate3d(105vw, 0, 0) scaleX(-1) rotate(-2deg); }
+            38% { transform: translate3d(42vw, 0.55rem, 0) scaleX(-1) rotate(1deg); }
+            72% { transform: translate3d(-18vw, -0.35rem, 0) scaleX(-1) rotate(-1deg); }
+            to { transform: translate3d(-45vw, 0, 0) scaleX(-1) rotate(2deg); }
         }
 
         @keyframes beam-sweep {
-            from { transform: rotate(-28deg); opacity: 0.45; }
-            to { transform: rotate(17deg); opacity: 0.9; }
+            from { transform: rotate(-10deg); opacity: 0.5; }
+            50% { opacity: 0.95; }
+            to { transform: rotate(9deg); opacity: 0.58; }
         }
 
         @keyframes firefly-drift {
@@ -656,6 +849,20 @@
             }
         }
 
+        @media (max-width: 639px) {
+            .celestial-wheel { left: 5%; }
+            .bird-flock { animation-duration: 37s; }
+            .bird-flock.reverse { animation-duration: 49s; }
+            .sky-clouds { opacity: 0.55; }
+            .lighthouse-beam { width: clamp(11rem, 52vw, 18rem); }
+        }
+
+        @media (max-height: 560px) and (orientation: landscape) {
+            .celestial-wheel { top: 3%; width: 9rem; height: 9rem; }
+            .bird-flock { top: 22%; }
+            .bird-flock.reverse { top: 36%; }
+        }
+
         /* Toggle Switch Styling */
         .toggle-checkbox:checked { right: 0; border-color: #F28C28; }
         .toggle-checkbox:checked + .toggle-label { background-color: #F28C28; }
@@ -668,7 +875,9 @@
         body[data-theme="monochrome"] .toggle-checkbox:checked + .toggle-label { background-color: rgb(var(--app-accent)); }
 
         body[data-theme="colorful"] #celestial-animation {
-            background: linear-gradient(180deg, rgb(68 37 88 / 0.25), rgb(53 57 105 / 0.08) 60%, rgb(17 54 69 / 0.35));
+            background:
+                radial-gradient(ellipse at 50% 42%, rgb(111 70 139 / 0.18), transparent 58%),
+                linear-gradient(180deg, rgb(68 37 88 / 0.25), rgb(53 57 105 / 0.08) 60%, rgb(17 54 69 / 0.4));
         }
 
         body[data-theme="monochrome"] #celestial-animation {
@@ -965,29 +1174,34 @@
             
             <!-- Hintergrund Animation (Sonne/Mond) -->
             <div id="celestial-animation">
+                <div class="starfield" aria-hidden="true"></div>
+                <div class="sky-clouds" aria-hidden="true"><span></span><span></span><span></span></div>
                 <div class="celestial-wheel">
                     <div class="sun"></div>
                     <div class="moon-stars"></div>
-                    <span class="stars" style="top:45%; left:60%;"></span>
-                    <span class="stars" style="top:70%; left:25%;"></span>
-                    <span class="stars" style="top:25%; left:35%;"></span>
+                    <span class="stars" style="top:45%; left:60%; --twinkle-duration:3.8s;"></span>
+                    <span class="stars" style="top:70%; left:25%; --star-size:0.14rem; --twinkle-delay:-1.6s;"></span>
+                    <span class="stars" style="top:25%; left:35%; --star-size:0.16rem; --twinkle-duration:5.2s; --twinkle-delay:-2.4s;"></span>
+                    <span class="stars" style="top:82%; left:73%; --star-size:0.12rem; --twinkle-delay:-0.8s;"></span>
+                    <span class="stars" style="top:54%; left:11%; --star-size:0.13rem; --twinkle-duration:5.6s; --twinkle-delay:-3s;"></span>
+                    <span class="stars" style="top:12%; left:68%; --star-size:0.14rem; --twinkle-duration:4.8s; --twinkle-delay:-1.2s;"></span>
                 </div>
                 <div class="mountain-landscape"></div>
                 <div class="forest-landscape"></div>
                 <div class="fireflies" aria-hidden="true">
-                    <span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span><span></span>
                 </div>
                 <div class="scenic-horizon"></div>
                 <div class="bird-flock" aria-hidden="true">
-                    <svg viewBox="0 0 40 20"><path d="M2 14c5-1 8-6 12-9 3 3 6 8 11 9M14 5c4-3 8-3 12 0 3 3 6 7 12 8"/></svg>
-                    <svg viewBox="0 0 40 20"><path d="M2 14c5-1 8-6 12-9 3 3 6 8 11 9M14 5c4-3 8-3 12 0 3 3 6 7 12 8"/></svg>
-                    <svg viewBox="0 0 40 20"><path d="M2 14c5-1 8-6 12-9 3 3 6 8 11 9M14 5c4-3 8-3 12 0 3 3 6 7 12 8"/></svg>
+                    <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
+                    <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
+                    <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
                 </div>
                 <div class="bird-flock reverse" aria-hidden="true">
-                    <svg viewBox="0 0 40 20"><path d="M2 14c5-1 8-6 12-9 3 3 6 8 11 9M14 5c4-3 8-3 12 0 3 3 6 7 12 8"/></svg>
-                    <svg viewBox="0 0 40 20"><path d="M2 14c5-1 8-6 12-9 3 3 6 8 11 9M14 5c4-3 8-3 12 0 3 3 6 7 12 8"/></svg>
+                    <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
+                    <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
                 </div>
-                <div class="lighthouse-beam"></div>
+                <div class="lighthouse-beam" aria-hidden="true"></div>
                 <svg class="lighthouse" viewBox="0 0 80 140" aria-hidden="true">
                     <path d="M22 137 31 37h18l9 100Z" fill="currentColor" opacity=".82"/>
                     <path d="M27 55h26M25 78h30M23 102h34" stroke="rgb(var(--app-bg))" stroke-width="5" opacity=".75"/>
@@ -996,7 +1210,6 @@
                     <path d="M29 20h22l-4-7H33z" fill="currentColor"/>
                     <path d="M12 137h56" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
                 </svg>
-                <div class="scenic-horizon"></div>
             </div>
 
             <div class="flex-1 flex flex-col w-full h-full relative z-10">
