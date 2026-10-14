@@ -1,5 +1,5 @@
-const CACHE_NAME = 'read-app-shell-v3';
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+const CACHE_NAME = 'read-app-shell-v4';
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg?v=4'];
 
 self.addEventListener('install', event => {
     event.waitUntil(
