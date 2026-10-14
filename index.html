@@ -918,7 +918,7 @@
             <div class="px-6 pt-12 pb-4 flex justify-between items-start">
                 <div>
                     <h1 class="text-3xl font-bold text-app-text tracking-tight">READ<span class="text-app-accent">.</span></h1>
-                    <p class="text-sm text-gray-400 font-bold mt-1">Bibliothek · <span id="library-streak">🔥 0 Tage</span></p>
+                    <p class="text-sm text-gray-400 font-bold mt-1">Bibliothek · <span id="library-streak">0 Tage</span></p>
                 </div>
             </div>
 
@@ -988,7 +988,7 @@
                     </div>
                     <div class="bg-app-surface p-4 rounded-2xl">
                         <p class="text-xs text-gray-400 mb-1 font-bold uppercase tracking-wider">Lese-Streak</p>
-                        <p id="profile-streak" class="text-2xl font-bold text-app-accent">🔥 0 Tage</p>
+                        <p id="profile-streak" class="text-2xl font-bold text-app-accent">0 Tage</p>
                         <p class="mt-1 text-xs text-gray-400">Ein Lesetag zählt höchstens einmal.</p>
                     </div>
                 </div>
@@ -3061,7 +3061,7 @@
                 const currentDay = this.getCalendarDayNumber(today);
                 const daysSinceReading = lastReadDay === null ? null : currentDay - lastReadDay;
                 const visibleStreak = daysSinceReading === 0 || daysSinceReading === 1 ? this.state.streakDays : 0;
-                const label = `🔥 ${visibleStreak} ${visibleStreak === 1 ? 'Tag' : 'Tage'}`;
+                const label = `${visibleStreak} ${visibleStreak === 1 ? 'Tag' : 'Tage'}`;
                 const libraryStreak = document.getElementById('library-streak');
                 const profileStreak = document.getElementById('profile-streak');
                 if (libraryStreak) libraryStreak.textContent = label;
