@@ -165,13 +165,13 @@
             #screen-ready > .flex-1,
             #screen-ready > .px-6:last-child,
             #screen-read > div.flex-1,
-            #screen-achievements > div:last-child {
+            #screen-achievements > .progress-content {
                 width: min(100%, 960px);
                 margin-left: auto;
                 margin-right: auto;
             }
 
-            #screen-achievements > div:last-child {
+            #achievements-list {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
@@ -224,13 +224,14 @@
                 width: min(calc(100% - 3rem), 1040px);
             }
 
-            #screen-achievements > div:last-child {
+            #achievements-list {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
             }
 
             #screen-ready > .flex-1,
             #screen-ready > .px-6:last-child,
-            #screen-read > div.flex-1 {
+            #screen-read > div.flex-1,
+            #screen-achievements > .progress-content {
                 width: min(100%, 1040px);
             }
 
@@ -1005,32 +1006,6 @@
                     </div>
                 </section>
 
-                <section id="friends-panel" class="mb-8 rounded-2xl border border-app-accent/30 bg-app-surface p-4" aria-labelledby="friends-heading">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 id="friends-heading" class="text-base font-bold text-app-text">Freunde & Rangliste</h3>
-                            <p class="mt-1 text-sm text-gray-400">Teile deine ID und vergleiche deine XP.</p>
-                        </div>
-                        <button id="friends-refresh-btn" type="button" onclick="app.refreshFriends()" aria-label="Freundes-Rangliste aktualisieren" class="shrink-0 rounded-xl bg-app-bg px-3 py-2 text-sm font-bold text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Aktualisieren</button>
-                    </div>
-                    <div class="mt-4 rounded-xl bg-app-bg p-3">
-                        <label for="friend-code-value" class="block text-xs font-bold uppercase tracking-wider text-gray-400">Deine Friend ID</label>
-                        <div class="mt-2 flex items-center gap-2">
-                            <code id="friend-code-value" class="min-w-0 flex-1 break-all text-sm font-bold text-app-text">Wird geladen …</code>
-                            <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text">Kopieren</button>
-                        </div>
-                    </div>
-                    <form class="mt-4" onsubmit="app.addFriend(event)">
-                        <label for="friend-code-input" class="block text-sm font-bold text-app-text">Freund mit ID hinzufügen</label>
-                        <div class="mt-2 flex gap-2">
-                            <input id="friend-code-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="36" placeholder="UUID des Freundes" class="min-w-0 flex-1 rounded-xl border border-app-surface-light bg-app-bg px-3 py-3 text-sm text-app-text placeholder:text-gray-500 focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
-                            <button id="friend-add-btn" type="submit" class="shrink-0 rounded-xl bg-app-accent px-4 py-3 text-sm font-bold text-app-bg disabled:cursor-not-allowed disabled:opacity-50">Hinzufügen</button>
-                        </div>
-                    </form>
-                    <p id="friends-status" class="mt-3 text-sm text-gray-400" aria-live="polite">Freundesliste wird geladen …</p>
-                    <ol id="friends-leaderboard" class="mt-3 space-y-2" aria-label="Rangliste nach XP"></ol>
-                </section>
-
                 <section id="gamification-panel" class="mb-8 rounded-2xl border border-app-accent/30 bg-app-surface p-4" aria-labelledby="gamification-heading">
                     <div class="flex items-start justify-between gap-4">
                         <div>
@@ -1120,10 +1095,38 @@
         <!-- =================== ACHIEVEMENTS SCREEN =================== -->
         <div id="screen-achievements" class="screen">
             <div class="px-6 pt-12 pb-4 border-b border-app-surface">
-                <h1 class="text-3xl font-bold text-app-text">Erfolge</h1>
-                <p class="text-sm text-gray-400 mt-1">Deine gesammelten Trophäen.</p>
+                <h1 class="text-3xl font-bold text-app-text">Fortschritt</h1>
+                <p class="text-sm text-gray-400 mt-1">Deine Erfolge und deine Rangliste mit Freunden.</p>
             </div>
-            <div id="achievements-list" class="flex-1 overflow-y-auto no-scrollbar px-6 py-6 pb-24 grid grid-cols-2 gap-4">
+            <div class="progress-content flex-1 overflow-y-auto no-scrollbar px-6 py-6 pb-24">
+                <section id="friends-panel" class="mb-8 rounded-2xl border border-app-accent/30 bg-app-surface p-4" aria-labelledby="friends-heading">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 id="friends-heading" class="text-base font-bold text-app-text">Freunde & Rangliste</h2>
+                            <p class="mt-1 text-sm text-gray-400">Teile deine ID und vergleiche deine XP.</p>
+                        </div>
+                        <button id="friends-refresh-btn" type="button" onclick="app.refreshFriends()" aria-label="Freundes-Rangliste aktualisieren" class="shrink-0 rounded-xl bg-app-bg px-3 py-2 text-sm font-bold text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Aktualisieren</button>
+                    </div>
+                    <div class="mt-4 rounded-xl bg-app-bg p-3">
+                        <label for="friend-code-value" class="block text-xs font-bold uppercase tracking-wider text-gray-400">Deine Friend ID</label>
+                        <div class="mt-2 flex items-center gap-2">
+                            <code id="friend-code-value" class="min-w-0 flex-1 break-all text-sm font-bold text-app-text">Wird geladen …</code>
+                            <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text">Kopieren</button>
+                        </div>
+                    </div>
+                    <form class="mt-4" onsubmit="app.addFriend(event)">
+                        <label for="friend-code-input" class="block text-sm font-bold text-app-text">Freund mit ID hinzufügen</label>
+                        <div class="mt-2 flex gap-2">
+                            <input id="friend-code-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="36" placeholder="UUID des Freundes" class="min-w-0 flex-1 rounded-xl border border-app-surface-light bg-app-bg px-3 py-3 text-sm text-app-text placeholder:text-gray-500 focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                            <button id="friend-add-btn" type="submit" class="shrink-0 rounded-xl bg-app-accent px-4 py-3 text-sm font-bold text-app-bg disabled:cursor-not-allowed disabled:opacity-50">Hinzufügen</button>
+                        </div>
+                    </form>
+                    <p id="friends-status" class="mt-3 text-sm text-gray-400" aria-live="polite">Freundesliste wird geladen …</p>
+                    <ol id="friends-leaderboard" class="mt-3 space-y-2" aria-label="Rangliste nach XP"></ol>
+                </section>
+
+                <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Lese-Erfolge</h2>
+                <div id="achievements-list" class="grid grid-cols-2 gap-4">
                 <!-- Achievement 1 -->
                 <div class="bg-app-surface p-4 rounded-2xl flex flex-col items-center text-center border border-app-accent shadow-[0_0_15px_rgba(242,140,40,0.15)]">
                     <div class="w-12 h-12 rounded-full bg-app-accent bg-opacity-20 flex items-center justify-center mb-3 text-app-accent">
@@ -1147,6 +1150,7 @@
                     </div>
                     <h3 class="text-base font-bold text-app-text">Bücherwurm</h3>
                     <p class="text-xs text-gray-400 mt-1 leading-tight">Lese 3 Bücher.</p>
+                </div>
                 </div>
             </div>
         </div>
@@ -1333,7 +1337,7 @@
             </button>
             <button id="nav-btn-achievements" class="nav-btn flex flex-col items-center text-gray-500 w-1/4" onclick="app.navigateTo('achievements')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                <span class="text-[11px] font-bold">Erfolge</span>
+                <span class="text-[11px] font-bold">Fortschritt</span>
             </button>
             <button id="nav-btn-profile" class="nav-btn flex flex-col items-center text-gray-500 w-1/4" onclick="app.navigateTo('profile')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -3143,7 +3147,7 @@
                         <div class="space-y-3">
                             <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">1. Buch auswählen</p><p class="text-sm text-gray-400 mt-1">Wähle in der Bibliothek ein Buch. Auf dem Startbildschirm kannst du dein Tempo anpassen und auf Start tippen.</p></div>
                             <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">2. In deinem Tempo lesen</p><p class="text-sm text-gray-400 mt-1">Im Lesemodus pausierst oder startest du durch Tippen auf den Text oder den Play-Button. Mit den Pfeilen springst du 10 Wörter vor oder zurück.</p></div>
-                            <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">3. Tempo und Fortschritt</p><p class="text-sm text-gray-400 mt-1">Mit den Plus- und Minus-Tasten stellst du dein Tempo ein. Der Balken zeigt deinen Fortschritt. Bücher, Erfolge und Einstellungen findest du unten.</p></div>
+                            <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">3. Tempo und Fortschritt</p><p class="text-sm text-gray-400 mt-1">Mit den Plus- und Minus-Tasten stellst du dein Tempo ein. Der Balken zeigt deinen Fortschritt. Bücher, Fortschritt und Einstellungen findest du unten.</p></div>
                         </div>
                     </div>`
                 ];
@@ -3297,7 +3301,11 @@
                     window.initializeSupabaseAuth();
                 }
                 if (screenId === 'library') this.renderStreakStats();
-                if (screenId === 'achievements') this.renderAchievements();
+                if (screenId === 'achievements') {
+                    this.renderAchievements();
+                    window.initializeSupabaseAuth();
+                    this.refreshFriends();
+                }
                 if (screenId === 'read') {
                     this.renderWord();
                     this.updateProgress();
