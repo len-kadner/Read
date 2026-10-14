@@ -1110,7 +1110,7 @@
                     <div class="mt-4 rounded-xl bg-app-bg p-3">
                         <label for="friend-code-value" class="block text-xs font-bold uppercase tracking-wider text-gray-400">Deine Friend ID</label>
                         <div class="mt-2 flex items-center gap-2">
-                            <code id="friend-code-value" class="min-w-0 flex-1 break-all text-sm font-bold text-app-text">Wird geladen …</code>
+                            <code id="friend-code-value" class="block min-w-0 flex-1 truncate text-sm font-bold text-app-text sm:whitespace-normal sm:break-all" title="Friend ID">Wird geladen …</code>
                             <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text">Kopieren</button>
                         </div>
                     </div>
@@ -1497,6 +1497,12 @@
             window.addFriendByCode = async function addFriendByCode(friendCode) {
                 const client = await getSupabaseClient();
                 const { error } = await client.rpc('add_friend_by_code', { p_friend_code: friendCode });
+                if (error) throw error;
+            };
+
+            window.removeFriendByCode = async function removeFriendByCode(friendCode) {
+                const client = await getSupabaseClient();
+                const { error } = await client.rpc('remove_friend_by_code', { p_friend_code: friendCode });
                 if (error) throw error;
             };
 
@@ -2701,13 +2707,15 @@
                 const displayName = metadataName?.trim() || user?.email?.split('@')[0] || 'Leser';
                 const profileName = document.getElementById('profile-display-name');
                 if (profileName) profileName.textContent = displayName;
-                if (!statusText || !button || !buttonText) return;
+                if (statusText) {
+                    statusText.textContent = message || (status === 'loading'
+                        ? 'Cloud-Konto wird geladen …'
+                        : signedIn
+                            ? user.email || 'Mit Google angemeldet'
+                            : 'Nicht angemeldet – Fortschritt wird nicht gespeichert');
+                }
+                if (!button || !buttonText) return;
 
-                statusText.textContent = message || (status === 'loading'
-                    ? 'Cloud-Konto wird geladen …'
-                    : signedIn
-                        ? user.email || 'Mit Google angemeldet'
-                        : 'Nicht angemeldet – Fortschritt wird nicht gespeichert');
                 buttonText.textContent = status === 'loading'
                     ? 'Bitte warten …'
                     : signedIn ? 'Abmelden' : 'Mit Google anmelden';
@@ -2732,6 +2740,7 @@
                     codeElement.textContent = !signedIn
                         ? 'Nach der Anmeldung verfügbar'
                         : this.state.friendCode || 'Wird geladen …';
+                    codeElement.title = this.state.friendCode || codeElement.textContent;
                 }
                 if (statusElement) statusElement.textContent = this.state.friendStatus;
                 if (input) input.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
@@ -2765,7 +2774,18 @@
                     xp.className = 'shrink-0 text-sm font-bold text-app-accent';
                     xp.textContent = `${this.formatWordCount(friend.xp_points)} XP`;
                     identity.append(name, code);
-                    row.append(identity, xp);
+                    row.appendChild(identity);
+                    if (!friend.is_self) {
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.className = 'shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-gray-300 disabled:opacity-50';
+                        removeButton.textContent = 'Beenden';
+                        removeButton.setAttribute('aria-label', `Freundschaft mit ${friend.display_name} beenden`);
+                        removeButton.disabled = this.state.friendsLoading;
+                        removeButton.addEventListener('click', () => this.removeFriend(friend.friend_code));
+                        row.appendChild(removeButton);
+                    }
+                    row.appendChild(xp);
                     list.appendChild(row);
                 });
             },
@@ -2862,6 +2882,24 @@
                     this.state.friendStatus = 'Kopieren nicht möglich. Markiere die Friend ID und kopiere sie manuell.';
                 }
                 this.renderFriends();
+            },
+
+            async removeFriend(friendCode) {
+                if (!this.state.authSession || !this.state.cloudSyncReady) return;
+                this.state.friendsLoading = true;
+                this.state.friendStatus = 'Freundschaft wird beendet …';
+                this.renderFriends();
+                try {
+                    await window.removeFriendByCode(friendCode);
+                    const refreshed = await this.refreshFriends();
+                    if (refreshed) this.state.friendStatus = 'Freundschaft wurde beendet.';
+                } catch (error) {
+                    console.error('Freundschaft konnte nicht beendet werden.', error);
+                    this.state.friendStatus = `Freundschaft konnte nicht beendet werden: ${error.message || 'Unbekannter Fehler'}`;
+                } finally {
+                    this.state.friendsLoading = false;
+                    this.renderFriends();
+                }
             },
 
             renderGamification() {
