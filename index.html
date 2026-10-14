@@ -1081,6 +1081,11 @@
                     </div>
                     <section class="mt-3 rounded-2xl bg-app-surface p-4" aria-labelledby="advanced-settings-heading">
                         <h4 id="advanced-settings-heading" class="text-base font-bold text-app-text">Lesedarstellung</h4>
+                        <label class="mt-3 flex min-h-11 cursor-pointer items-center justify-between gap-4">
+                            <span class="text-sm font-bold text-app-text">Sprint-Modus</span>
+                            <input id="sprint-mode-setting" type="checkbox" checked onchange="app.setSprintMode(this.checked)" class="h-5 w-5 accent-app-accent">
+                        </label>
+                        <p class="mt-1 text-sm text-gray-400">Teilt Bücher in kurze Leseabschnitte. Wenn ausgeschaltet, liest du ohne Unterbrechung bis zum Buchende weiter. Standardmäßig eingeschaltet.</p>
                         <label for="visible-words-setting" class="mt-3 block text-sm font-bold text-app-text">Wörter gleichzeitig anzeigen</label>
                         <p class="mt-1 text-sm text-gray-400">Bis zu drei Wörter. Wenn sie nicht gemeinsam passen, werden weniger angezeigt – immer vollständig und mittig ausgerichtet.</p>
                         <select id="visible-words-setting" onchange="app.setVisibleWords(this.value)" class="mt-3 min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
@@ -1691,10 +1696,14 @@
                 wpm: 250,
                 isPlaying: false,
                 words: [],
+                wordDurationPrefix: null,
+                wordDurationBookId: null,
+                wordDurationWpm: null,
                 paragraphBreaks: new Set(),
                 currentIndex: 0,
                 intervalId: null,
                 visibleWords: 1,
+                sprintMode: true,
                 visibleWordsGroupStart: null,
                 visibleWordsGroupCount: 0,
                 tutorialStep: 0,
@@ -1905,6 +1914,14 @@
                         console.error('Gespeicherte Anzahl gleichzeitig angezeigter Wörter ist ungültig und wird ignoriert.');
                     }
                 }
+                const savedSprintMode = this.readSetting('read-sprint-mode');
+                if (savedSprintMode !== null) {
+                    if (savedSprintMode === 'true' || savedSprintMode === 'false') {
+                        this.state.sprintMode = savedSprintMode === 'true';
+                    } else {
+                        console.error('Gespeicherter Sprint-Modus ist ungültig und wird ignoriert.');
+                    }
+                }
                 this.updateToggleUI();
                 const savedWpm = this.readSetting('read-wpm');
                 if (savedWpm !== null) {
@@ -1928,6 +1945,7 @@
                 }
                 this.renderSettingsThemeOptions();
                 this.updateVisibleWordsControl();
+                this.updateSprintModeControl();
                 this.updateSprintScreen();
                 if (window.location.protocol !== 'file:') {
                     this.loadBookManifest();
@@ -2589,10 +2607,14 @@
                 const message = document.getElementById('sprint-finished-message');
                 const nextButton = document.getElementById('sprint-next-button');
                 const libraryButton = document.getElementById('sprint-library-button');
-                title.textContent = isBookFinished ? 'Buch beendet!' : `Sprint ${sprintNumber} geschafft!`;
+                title.textContent = isBookFinished
+                    ? 'Buch beendet!'
+                    : this.state.sprintMode ? `Sprint ${sprintNumber} geschafft!` : 'Weiterlesen';
                 message.textContent = isBookFinished
                     ? 'Du hast das Buch vollständig gelesen.'
-                    : `${Math.min(this.state.sprintSize, total - this.state.currentIndex)} Wörter im nächsten Sprint`;
+                    : this.state.sprintMode
+                        ? `${Math.min(this.state.sprintSize, total - this.state.currentIndex)} Wörter im nächsten Sprint`
+                        : 'Lies ohne Sprint-Unterbrechung bis zum Ende des Buches weiter.';
                 nextButton.classList.toggle('hidden', isBookFinished);
                 libraryButton.textContent = isBookFinished ? 'Zurück zur Bibliothek' : 'Später weiterlesen';
             },
@@ -2636,6 +2658,7 @@
                     settings: {
                         wpm: this.state.wpm,
                         visibleWords: this.state.visibleWords,
+                        sprintMode: this.state.sprintMode,
                         selectedTheme: this.state.selectedTheme,
                         animationsEnabled: this.state.animationsEnabled,
                         gamificationEnabled: this.state.gamificationEnabled,
@@ -2728,6 +2751,9 @@
                 if (settings.visibleWords !== undefined && ![1, 2, 3, 5, 7].includes(settings.visibleWords)) {
                     throw new Error('Die Anzahl gleichzeitig angezeigter Wörter im Cloud-Profil ist ungültig.');
                 }
+                if (settings.sprintMode !== undefined && typeof settings.sprintMode !== 'boolean') {
+                    throw new Error('Der Sprint-Modus im Cloud-Profil ist ungültig.');
+                }
                 if (settings.selectedTheme !== undefined &&
                     !['classic', 'colorful', 'monochrome'].includes(settings.selectedTheme)) {
                     throw new Error('Das Design im Cloud-Profil ist ungültig.');
@@ -2773,6 +2799,7 @@
                 if (stats.dailyChallengeCompleted !== undefined) this.state.dailyChallengeCompleted = stats.dailyChallengeCompleted;
                 if (settings.wpm !== undefined) this.state.wpm = settings.wpm;
                 if (settings.visibleWords !== undefined) this.state.visibleWords = Math.min(3, settings.visibleWords);
+                if (settings.sprintMode !== undefined) this.state.sprintMode = settings.sprintMode;
                 if (settings.selectedTheme !== undefined) {
                     this.state.selectedTheme = settings.selectedTheme;
                     this.applyTheme(settings.selectedTheme);
@@ -2810,6 +2837,7 @@
                 this.saveSetting('read-gamification-enabled', String(this.state.gamificationEnabled));
                 this.saveSetting('read-wpm', String(this.state.wpm));
                 this.saveSetting('read-visible-words', String(this.state.visibleWords));
+                this.saveSetting('read-sprint-mode', String(this.state.sprintMode));
                 this.saveSetting('read-theme', this.state.selectedTheme);
                 this.saveSetting('read-animations', String(this.state.animationsEnabled));
                 this.saveSetting('read-preference', this.state.readingPreference || '');
@@ -2826,6 +2854,7 @@
                 this.renderAchievements();
                 this.updateWpmDisplays();
                 this.updateVisibleWordsControl();
+                this.updateSprintModeControl();
                 this.updateReadyUI();
                 this.updateSprintScreen();
             },
@@ -3209,7 +3238,9 @@
 
             nextSprint() {
                 if (this.state.currentIndex >= this.state.words.length) return;
-                this.state.currentIndex = Math.floor(this.state.currentIndex / this.state.sprintSize) * this.state.sprintSize;
+                if (this.state.sprintMode) {
+                    this.state.currentIndex = Math.floor(this.state.currentIndex / this.state.sprintSize) * this.state.sprintSize;
+                }
                 this.renderWord();
                 this.updateProgress();
                 this.navigateTo('read');
@@ -3774,6 +3805,32 @@
                 this.renderWord();
             },
 
+            setSprintMode(enabled) {
+                if (typeof enabled !== 'boolean') {
+                    console.error('Der Sprint-Modus muss ein boolescher Wert sein.');
+                    this.updateSprintModeControl();
+                    return;
+                }
+
+                this.state.sprintMode = enabled;
+                this.state.visibleWordsGroupStart = null;
+                this.state.visibleWordsGroupCount = 0;
+                this.saveSetting('read-sprint-mode', String(enabled));
+                window.queueCloudSave();
+                this.updateSprintModeControl();
+                if (this.state.words.length) {
+                    this.renderWord();
+                    this.updateProgress();
+                    this.updateReadyUI();
+                }
+                this.updateSprintScreen();
+            },
+
+            updateSprintModeControl() {
+                const control = document.getElementById('sprint-mode-setting');
+                if (control) control.checked = this.state.sprintMode;
+            },
+
             updateVisibleWordsControl() {
                 const select = document.getElementById('visible-words-setting');
                 if (select) select.value = String(this.state.visibleWords);
@@ -3875,6 +3932,7 @@
             loadBook(bookId, resetIfFinished) {
                 const book = this.state.books.find(b => b.id === bookId);
                 if (book) {
+                    this.state.wordDurationPrefix = null;
                     this.chooseBookScene(bookId);
                     this.state.currentBookId = bookId;
                     this.state.visibleWordsGroupStart = null;
@@ -3990,7 +4048,7 @@
                         this.pause();
                         this.updateSprintScreen();
                         this.navigateTo('finished');
-                    } else if (this.state.currentIndex % this.state.sprintSize === 0) {
+                    } else if (this.state.sprintMode && this.state.currentIndex % this.state.sprintSize === 0) {
                         this.pause();
                         this.updateSprintScreen();
                         this.navigateTo('finished');
@@ -4013,8 +4071,12 @@
             },
 
             skip(wordsDelta) {
-                const sprintStart = Math.floor(this.state.currentIndex / this.state.sprintSize) * this.state.sprintSize;
-                const sprintEnd = Math.min(sprintStart + this.state.sprintSize, this.state.words.length);
+                const sprintStart = this.state.sprintMode
+                    ? Math.floor(this.state.currentIndex / this.state.sprintSize) * this.state.sprintSize
+                    : 0;
+                const sprintEnd = this.state.sprintMode
+                    ? Math.min(sprintStart + this.state.sprintSize, this.state.words.length)
+                    : this.state.words.length;
                 if (this.state.isPlaying) clearTimeout(this.state.intervalId);
                 this.state.currentIndex += wordsDelta;
                 if (this.state.currentIndex < sprintStart) this.state.currentIndex = sprintStart;
@@ -4048,10 +4110,12 @@
                     const gap = parseFloat(style.columnGap) || 0;
                     const baseFontSize = parseFloat(style.fontSize);
                     const highlightPadding = baseFontSize * 0.8;
-                    const sprintEnd = Math.min(
-                        (Math.floor(this.state.currentIndex / this.state.sprintSize) + 1) * this.state.sprintSize,
-                        this.state.words.length
-                    );
+                    const sprintEnd = this.state.sprintMode
+                        ? Math.min(
+                            (Math.floor(this.state.currentIndex / this.state.sprintSize) + 1) * this.state.sprintSize,
+                            this.state.words.length
+                        )
+                        : this.state.words.length;
 
                     const measureGroup = start => {
                         let groupCount = 0;
@@ -4146,19 +4210,22 @@
                 const sprintEnd = Math.min(sprintStart + this.state.sprintSize, total);
                 const sprintLength = sprintEnd - sprintStart;
                 const sprintCurrent = Math.min(current - sprintStart, sprintLength);
-                const percentage = sprintLength > 0 ? (sprintCurrent / sprintLength) * 100 : 0;
+                const percentage = this.state.sprintMode
+                    ? sprintLength > 0 ? (sprintCurrent / sprintLength) * 100 : 0
+                    : total > 0 ? Math.min(current / total * 100, 100) : 0;
                 
                 document.getElementById('read-progress-bar').style.width = `${percentage}%`;
 
                 if (this.state.currentIndex % 5 === 0 || this.state.currentIndex >= total) {
                     this.saveBookProgress();
                 }
-                const msLeft = this.getEstimatedDuration(current, sprintEnd);
+                const msLeft = this.getEstimatedDuration(current, this.state.sprintMode ? sprintEnd : total);
                 const secondsLeft = Math.ceil(msLeft / 1000);
                 
                 const timeLeftEl = document.getElementById('read-time-left');
-                document.getElementById('read-progress-label').textContent =
-                    `Sprint ${Math.floor(this.state.currentIndex / this.state.sprintSize) + 1}`;
+                document.getElementById('read-progress-label').textContent = this.state.sprintMode
+                    ? `Sprint ${Math.floor(this.state.currentIndex / this.state.sprintSize) + 1}`
+                    : 'Gesamtfortschritt';
                 if (secondsLeft > 60) {
                     timeLeftEl.textContent = `~${Math.ceil(secondsLeft/60)} Min.`;
                 } else if (secondsLeft > 0) {
@@ -4177,17 +4244,20 @@
                 const sprintCurrent = Math.max(0, current - sprintStart);
                 const percentage = total > 0 && current >= total
                     ? 100
-                    : sprintLength > 0 ? (sprintCurrent / sprintLength) * 100 : 0;
+                    : this.state.sprintMode
+                        ? sprintLength > 0 ? (sprintCurrent / sprintLength) * 100 : 0
+                        : total > 0 ? current / total * 100 : 0;
                 
                 document.getElementById('ready-progress-bar').style.width = `${percentage}%`;
                 document.getElementById('ready-progress-text').textContent = `${Math.round(percentage)} %`;
 
-                const msLeft = this.getEstimatedDuration(current, sprintEnd);
+                const msLeft = this.getEstimatedDuration(current, this.state.sprintMode ? sprintEnd : total);
                 const secondsLeft = Math.ceil(msLeft / 1000);
                 
                 const readyTimeEl = document.getElementById('ready-time-left');
-                document.getElementById('ready-progress-label').textContent =
-                    `Sprint ${Math.floor(current / this.state.sprintSize) + 1}`;
+                document.getElementById('ready-progress-label').textContent = this.state.sprintMode
+                    ? `Sprint ${Math.floor(current / this.state.sprintSize) + 1}`
+                    : 'Gesamtfortschritt';
                 if (current >= total && total > 0) {
                     readyTimeEl.textContent = 'Fertig';
                 } else if (secondsLeft > 60) {
@@ -4198,11 +4268,21 @@
             },
 
             getEstimatedDuration(startIndex, endIndex) {
-                let duration = 0;
-                for (let index = startIndex; index < endIndex; index++) {
-                    duration += this.getWordDelay(index);
+                const bookId = String(this.state.currentBookId);
+                if (!this.state.wordDurationPrefix ||
+                    this.state.wordDurationBookId !== bookId ||
+                    this.state.wordDurationWpm !== this.state.wpm) {
+                    const prefix = new Float64Array(this.state.words.length + 1);
+                    for (let index = 0; index < this.state.words.length; index++) {
+                        prefix[index + 1] = prefix[index] + this.getWordDelay(index);
+                    }
+                    this.state.wordDurationPrefix = prefix;
+                    this.state.wordDurationBookId = bookId;
+                    this.state.wordDurationWpm = this.state.wpm;
                 }
-                return duration;
+                const start = Math.max(0, Math.min(startIndex, this.state.words.length));
+                const end = Math.max(start, Math.min(endIndex, this.state.words.length));
+                return this.state.wordDurationPrefix[end] - this.state.wordDurationPrefix[start];
             },
 
             finishBook() {
