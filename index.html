@@ -1095,10 +1095,10 @@
                     <h3 id="library-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Bücher</h3>
                     <div class="rounded-2xl bg-app-surface p-4">
                         <p class="text-base font-bold text-app-text">Bücher verwalten</p>
-                        <p class="mb-3 mt-1 text-sm text-gray-400">Lege TXT-Dateien in Unterordner mit dem Genre als Namen (z. B. „Books/Fantasy“ oder „Books/Sachbuecher“) und lade den Ordner hier. Der Dateiname wird zum Buchtitel.</p>
-                        <input id="books-folder-input" type="file" accept=".txt,text/plain" multiple webkitdirectory directory class="hidden" onchange="app.importBooks(this.files)">
-                        <button onclick="document.getElementById('books-folder-input').click()" class="w-full rounded-xl bg-app-bg py-3 font-bold text-app-text active:bg-app-surface-light">Books-Ordner auswählen</button>
-                        <p id="books-import-status" class="mt-2 text-xs text-gray-500" aria-live="polite">Auch auf einem Webserver können Dateien über Books/books.json automatisch geladen werden.</p>
+                        <p class="mb-3 mt-1 text-sm text-gray-400">Wähle TXT- oder EPUB-Dateien direkt aus – ein Ordner ist nicht nötig. Die Dateien werden direkt im Browser gelesen, es ist kein Upload-Server nötig. Hochgeladene Bücher werden unter „private“ gespeichert; der Dateiname wird zum Buchtitel.</p>
+                        <input id="books-folder-input" type="file" accept=".txt,.epub,text/plain,application/epub+zip" multiple class="hidden" onchange="app.importBooks(this.files)">
+                        <button onclick="document.getElementById('books-folder-input').click()" class="w-full rounded-xl bg-app-bg py-3 font-bold text-app-text active:bg-app-surface-light">Dateien auswählen</button>
+                        <p id="books-import-status" class="mt-2 text-xs text-gray-500" aria-live="polite">TXT- und EPUB-Dateien können direkt im Browser eingelesen werden – auch auf einer statischen Website.</p>
                     </div>
                 </section>
 
@@ -1729,7 +1729,7 @@
                 dailyChallengeWords: 0,
                 dailyChallengeCompleted: false,
                 removedBookIds: new Set(),
-                bookGenres: ['Roman', 'Sachbuch', 'Fantasy', 'Krimi', 'Romantik', 'Science-Fiction', 'Abenteuer', 'Horror', 'Drama', 'Geschichte', 'Lyrik', 'Kinderbuch', 'Sonstiges'],
+                bookGenres: ['Roman', 'Sachbuch', 'Fantasy', 'Krimi', 'Romantik', 'Science-Fiction', 'Abenteuer', 'Horror', 'Drama', 'Geschichte', 'Lyrik', 'Kinderbuch', 'Sonstiges', 'private'],
                 
                 // Buch-Datenbank
                 books: [
@@ -1932,7 +1932,7 @@
                 if (window.location.protocol !== 'file:') {
                     this.loadBookManifest();
                 } else {
-                    this.updateBooksImportStatus('Wähle den Books-Ordner hier einmal aus, wenn du die App lokal öffnest.');
+                    this.updateBooksImportStatus('Lade TXT- oder EPUB-Dateien direkt über „Dateien auswählen“ hoch.');
                 }
             },
 
@@ -1952,7 +1952,7 @@
                     this.persistImportedBooks(imported);
                 } catch (error) {
                     console.error('Importierte Bücher konnten nicht geladen werden.', error);
-                    this.updateBooksImportStatus('Gespeicherte Bücher konnten nicht geladen werden. Bitte importiere den Books-Ordner erneut.');
+                    this.updateBooksImportStatus('Gespeicherte Bücher konnten nicht geladen werden. Bitte lade die Dateien erneut hoch.');
                 }
             },
 
@@ -2366,35 +2366,144 @@
                 }
             },
 
+            async extractEpubText(file) {
+                const buffer = await file.arrayBuffer();
+                const bytes = new Uint8Array(buffer);
+                const view = new DataView(buffer);
+                let endOfCentralDirectory = -1;
+                for (let offset = bytes.length - 22; offset >= Math.max(0, bytes.length - 65557); offset--) {
+                    if (view.getUint32(offset, true) === 0x06054b50) {
+                        endOfCentralDirectory = offset;
+                        break;
+                    }
+                }
+                if (endOfCentralDirectory < 0) throw new Error('Die EPUB-Datei enthält kein gültiges ZIP-Verzeichnis.');
+
+                const entryCount = view.getUint16(endOfCentralDirectory + 10, true);
+                const centralDirectoryOffset = view.getUint32(endOfCentralDirectory + 16, true);
+                if (entryCount === 0xffff || centralDirectoryOffset === 0xffffffff) {
+                    throw new Error('EPUB-Dateien im ZIP64-Format werden nicht unterstützt.');
+                }
+                const entries = new Map();
+                let offset = centralDirectoryOffset;
+                const decoder = new TextDecoder('utf-8', { fatal: true });
+                for (let index = 0; index < entryCount; index++) {
+                    if (offset + 46 > bytes.length || view.getUint32(offset, true) !== 0x02014b50) {
+                        throw new Error('Das ZIP-Verzeichnis der EPUB-Datei ist beschädigt.');
+                    }
+                    const flags = view.getUint16(offset + 8, true);
+                    const method = view.getUint16(offset + 10, true);
+                    const compressedSize = view.getUint32(offset + 20, true);
+                    const nameLength = view.getUint16(offset + 28, true);
+                    const extraLength = view.getUint16(offset + 30, true);
+                    const commentLength = view.getUint16(offset + 32, true);
+                    const localHeaderOffset = view.getUint32(offset + 42, true);
+                    const nameStart = offset + 46;
+                    const name = decoder.decode(bytes.subarray(nameStart, nameStart + nameLength));
+                    entries.set(name, { flags, method, compressedSize, localHeaderOffset });
+                    offset = nameStart + nameLength + extraLength + commentLength;
+                }
+
+                const readEntry = async path => {
+                    const entry = entries.get(path);
+                    if (!entry) throw new Error(`Die EPUB-Datei enthält die benötigte Datei „${path}“ nicht.`);
+                    if (entry.flags & 1) throw new Error('Passwortgeschützte EPUB-Dateien können nicht geöffnet werden.');
+                    const header = entry.localHeaderOffset;
+                    if (header + 30 > bytes.length || view.getUint32(header, true) !== 0x04034b50) {
+                        throw new Error(`Die EPUB-Datei „${path}“ ist beschädigt.`);
+                    }
+                    const dataStart = header + 30 + view.getUint16(header + 26, true) + view.getUint16(header + 28, true);
+                    const dataEnd = dataStart + entry.compressedSize;
+                    if (dataEnd > bytes.length) throw new Error(`Die EPUB-Datei „${path}“ ist unvollständig.`);
+                    const compressed = bytes.subarray(dataStart, dataEnd);
+                    if (entry.method === 0) return compressed;
+                    if (entry.method !== 8) throw new Error(`Das Kompressionsformat von „${path}“ wird nicht unterstützt.`);
+                    if (typeof DecompressionStream !== 'function') {
+                        throw new Error('Dieser Browser kann komprimierte EPUB-Dateien nicht entpacken. Bitte aktualisiere den Browser.');
+                    }
+                    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+                    return new Uint8Array(await new Response(stream).arrayBuffer());
+                };
+
+                const parseXml = (content, description) => {
+                    const xml = new DOMParser().parseFromString(content, 'application/xml');
+                    if (xml.querySelector('parsererror')) throw new Error(`${description} in der EPUB-Datei ist ungültig.`);
+                    return xml;
+                };
+                const container = parseXml(decoder.decode(await readEntry('META-INF/container.xml')), 'Die EPUB-Buchstruktur');
+                const rootfile = container.getElementsByTagNameNS('*', 'rootfile')[0];
+                if (!rootfile?.getAttribute('full-path')) throw new Error('Die EPUB-Datei enthält keinen gültigen Buchkatalog.');
+                const packagePath = rootfile.getAttribute('full-path');
+                const packageDocument = parseXml(decoder.decode(await readEntry(packagePath)), 'Der EPUB-Buchkatalog');
+                const metadata = packageDocument.getElementsByTagNameNS('*', 'metadata')[0];
+                const title = metadata?.getElementsByTagNameNS('*', 'title')[0]?.textContent?.trim() || '';
+                const manifest = new Map();
+                Array.from(packageDocument.getElementsByTagNameNS('*', 'item')).forEach(item => {
+                    const id = item.getAttribute('id');
+                    const href = item.getAttribute('href');
+                    if (!id || !href) return;
+                    const resolvedUrl = new URL(href, `https://epub.invalid/${packagePath}`);
+                    if (resolvedUrl.origin !== 'https://epub.invalid') return;
+                    manifest.set(id, {
+                        path: decodeURIComponent(resolvedUrl.pathname.slice(1)),
+                        mediaType: item.getAttribute('media-type')
+                    });
+                });
+                const blockTags = new Set([
+                    'ADDRESS', 'ARTICLE', 'BLOCKQUOTE', 'DD', 'DIV', 'DL', 'DT', 'FIGCAPTION',
+                    'FIGURE', 'FOOTER', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'LI',
+                    'MAIN', 'OL', 'P', 'PRE', 'SECTION', 'TABLE', 'TD', 'TH', 'TR', 'UL'
+                ]);
+                const extractText = node => {
+                    if (node.nodeType === 3) return node.nodeValue || '';
+                    if (node.nodeType !== 1 || ['SCRIPT', 'STYLE', 'NAV'].includes(node.tagName)) return '';
+                    if (node.tagName === 'BR') return '\n';
+                    const content = Array.from(node.childNodes, extractText).join('');
+                    return blockTags.has(node.tagName) ? `${content}\n\n` : content;
+                };
+                const spine = Array.from(packageDocument.getElementsByTagNameNS('*', 'spine')[0]?.getElementsByTagNameNS('*', 'itemref') || []);
+                const chapters = [];
+                for (const itemref of spine) {
+                    if (itemref.getAttribute('linear') === 'no') continue;
+                    const item = manifest.get(itemref.getAttribute('idref'));
+                    if (!item || !['application/xhtml+xml', 'text/html'].includes(item.mediaType)) continue;
+                    const chapter = new DOMParser().parseFromString(decoder.decode(await readEntry(item.path)), 'text/html');
+                    const chapterText = extractText(chapter.body).replace(/[ \t]*\r?\n[ \t]*/g, '\n')
+                        .replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+                    if (chapterText) chapters.push(chapterText);
+                }
+                const text = chapters.join('\n\n').trim();
+                if (!text) throw new Error('Die EPUB-Datei enthält keinen lesbaren Buchtext.');
+                return { title, text };
+            },
+
             async importBooks(fileList) {
-                const files = Array.from(fileList || []).filter(file => /\.txt$/i.test(file.name));
+                const files = Array.from(fileList || []);
                 if (!files.length) {
-                    this.updateBooksImportStatus('Keine TXT-Dateien gefunden. Lege Bücher in Genre-Unterordnern wie Sachbuecher, Romane oder Fantasy ab.');
+                    this.updateBooksImportStatus('Bitte wähle mindestens eine TXT- oder EPUB-Datei aus.');
                     return;
                 }
 
                 const imported = [];
                 const errors = [];
                 for (const file of files) {
-                    const relativePath = file.webkitRelativePath || file.name;
-                    const segments = relativePath.split(/[\\/]/).filter(Boolean);
-                    const categoryFolder = segments.find(segment => this.getBookGenreFromFolder(segment));
-                    const type = categoryFolder ? this.getBookGenreFromFolder(categoryFolder) : null;
-                    if (!type) {
-                        errors.push(`${file.name}: Genre-Unterordner fehlt oder wird nicht erkannt`);
+                    const extension = file.name.match(/\.(txt|epub)$/i)?.[1]?.toLowerCase();
+                    if (!extension) {
+                        errors.push(`${file.name}: nur TXT- und EPUB-Dateien werden unterstützt`);
                         continue;
                     }
 
                     try {
-                        const text = await file.text();
+                        const epub = extension === 'epub' ? await this.extractEpubText(file) : null;
+                        const text = epub ? epub.text : await file.text();
                         if (!text.trim()) {
                             errors.push(`${file.name}: Datei ist leer`);
                             continue;
                         }
                         const book = {
-                            id: `file:${categoryFolder}:${file.name}`,
-                            title: file.name.replace(/\.txt$/i, ''),
-                            type,
+                            id: `file:private:${file.name}`,
+                            title: epub?.title || file.name.replace(/\.(txt|epub)$/i, ''),
+                            type: 'private',
                             text,
                             progress: 0,
                             source: 'import'
@@ -2404,7 +2513,7 @@
                         imported.push(book);
                     } catch (error) {
                         console.error(`Buchdatei "${file.name}" konnte nicht gelesen werden.`, error);
-                        errors.push(`${file.name}: konnte nicht gelesen werden`);
+                        errors.push(`${file.name}: ${error.message || 'konnte nicht gelesen werden'}`);
                     }
                 }
 
