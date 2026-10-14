@@ -1027,67 +1027,76 @@
                     </div>
                 </section>
 
-                <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Einstellungen</h3>
+                <section class="mb-8" aria-labelledby="reading-settings-heading">
+                    <h3 id="reading-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Lesen & Motivation</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-4 rounded-2xl bg-app-surface p-4">
+                            <div>
+                                <p class="text-base font-bold text-app-text">XP & Tages-Challenge</p>
+                                <p id="gamification-setting-description" class="mt-1 text-sm text-gray-400">Lese-Wörter sammeln und Tagesziele erreichen</p>
+                            </div>
+                            <button id="gamification-toggle" type="button" role="switch" aria-checked="true" aria-label="XP und Tages-Challenge" onclick="app.toggleGamification()" class="relative h-8 w-14 shrink-0 rounded-full bg-app-accent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-text">
+                                <span id="gamification-toggle-thumb" class="absolute left-1 top-1 h-6 w-6 translate-x-6 rounded-full bg-white shadow-md transition-transform"></span>
+                            </button>
+                        </div>
 
-                <div class="mb-3 flex items-center justify-between gap-4 rounded-2xl bg-app-surface p-4">
-                    <div>
-                        <p class="text-base font-bold text-app-text">XP & Tages-Challenge</p>
-                        <p id="gamification-setting-description" class="mt-1 text-sm text-gray-400">Lese-Wörter sammeln und Tagesziele erreichen</p>
+                        <div class="flex cursor-pointer items-center justify-between rounded-2xl bg-app-surface p-4" onclick="app.toggleAnimations()">
+                            <div>
+                                <p class="text-base font-bold text-app-text">Lese-Animationen</p>
+                                <p class="mt-1 text-sm text-gray-400">Sterne, vorbeifliegende Vögel und Leuchtturmlicht</p>
+                            </div>
+                            <div class="relative mr-2 inline-block w-14 shrink-0 select-none align-middle transition duration-200 ease-in">
+                                <div id="toggle-bg" class="block h-8 w-14 rounded-full bg-app-accent transition-colors duration-300"></div>
+                                <div id="toggle-dot" class="absolute left-1 top-1 h-6 w-6 translate-x-6 transform rounded-full bg-white shadow-md transition-transform duration-300"></div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl bg-app-surface p-4">
+                            <p class="text-base font-bold text-app-text">Tempo per Wischgeste</p>
+                            <p class="mt-1 text-sm text-gray-400">Beim Lesen im Textbereich nach oben wischen = schneller, nach unten = langsamer. Jeder Wisch ändert das Tempo mindestens um 10 Wörter pro Minute.</p>
+                        </div>
                     </div>
-                    <button id="gamification-toggle" type="button" role="switch" aria-checked="true" aria-label="XP und Tages-Challenge" onclick="app.toggleGamification()" class="relative h-8 w-14 shrink-0 rounded-full bg-app-accent transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-text">
-                        <span id="gamification-toggle-thumb" class="absolute left-1 top-1 h-6 w-6 translate-x-6 rounded-full bg-white shadow-md transition-transform"></span>
-                    </button>
-                </div>
-                
-                <div class="bg-app-surface rounded-2xl p-4 flex justify-between items-center cursor-pointer" onclick="app.toggleAnimations()">
-                    <div>
-                        <p class="text-base font-bold text-app-text">Lese-Animationen</p>
-                        <p class="text-sm text-gray-400 mt-1">Sterne, vorbeifliegende Vögel und Leuchtturmlicht</p>
-                    </div>
-                    <div class="relative inline-block w-14 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <div id="toggle-bg" class="block w-14 h-8 rounded-full bg-app-accent transition-colors duration-300"></div>
-                        <div id="toggle-dot" class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300 transform translate-x-6 shadow-md"></div>
-                    </div>
-                </div>
+                </section>
 
-                <div class="bg-app-surface rounded-2xl p-4 mt-3">
-                    <p class="text-base font-bold text-app-text">Tempo per Wischgeste</p>
-                    <p class="text-sm text-gray-400 mt-1">Beim Lesen im Textbereich nach oben wischen = schneller, nach unten = langsamer. Jeder Wisch ändert das Tempo mindestens um 10 Wörter pro Minute.</p>
-                </div>
-
-                <div class="mt-6">
-                    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Design</h3>
-                    <p class="text-sm text-gray-400 mb-3">Du kannst das Design jederzeit wechseln.</p>
-                    <div id="settings-theme-options" class="space-y-3"></div>
-                </div>
-
-                <button onclick="app.startTutorial('profile')" class="w-full mt-6 bg-app-surface rounded-2xl p-4 flex justify-between items-center text-left active:bg-app-surface-light transition-colors">
-                    <span>
-                        <span class="block text-base font-bold text-app-text">Tutorial</span>
-                        <span class="block text-sm text-gray-400 mt-1">Einführung und Lesetest erneut starten</span>
-                    </span>
-                    <span class="text-app-accent text-xl font-bold" aria-hidden="true">→</span>
-                </button>
-
-                <div class="mt-8">
-                    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Bücher verwalten</h3>
-                    <p class="text-sm text-gray-400 mb-3">Lege TXT-Dateien in Unterordner mit dem Genre als Namen (z. B. „Books/Fantasy“ oder „Books/Sachbuecher“) und lade den Ordner hier. Der Dateiname wird zum Buchtitel.</p>
-                    <input id="books-folder-input" type="file" accept=".txt,text/plain" multiple webkitdirectory directory class="hidden" onchange="app.importBooks(this.files)">
-                    <button onclick="document.getElementById('books-folder-input').click()" class="w-full py-3 rounded-xl bg-app-surface text-app-text font-bold active:bg-app-surface-light">Books-Ordner auswählen</button>
-                    <p id="books-import-status" class="text-xs text-gray-500 mt-2" aria-live="polite">Auch auf einem Webserver können Dateien über Books/books.json automatisch geladen werden.</p>
-                </div>
-
-                <section class="mt-8 border-t border-app-surface-light pt-6" aria-labelledby="advanced-settings-heading">
-                    <h3 id="advanced-settings-heading" class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Advanced</h3>
+                <section class="mb-8" aria-labelledby="appearance-settings-heading">
+                    <h3 id="appearance-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Darstellung</h3>
                     <div class="rounded-2xl bg-app-surface p-4">
-                        <label for="visible-words-setting" class="block text-base font-bold text-app-text">Wörter gleichzeitig anzeigen</label>
+                        <p class="text-base font-bold text-app-text">Design</p>
+                        <p class="mb-3 mt-1 text-sm text-gray-400">Du kannst das Design jederzeit wechseln.</p>
+                        <div id="settings-theme-options" class="space-y-3"></div>
+                    </div>
+                    <section class="mt-3 rounded-2xl bg-app-surface p-4" aria-labelledby="advanced-settings-heading">
+                        <h4 id="advanced-settings-heading" class="text-base font-bold text-app-text">Lesedarstellung</h4>
+                        <label for="visible-words-setting" class="mt-3 block text-sm font-bold text-app-text">Wörter gleichzeitig anzeigen</label>
                         <p class="mt-1 text-sm text-gray-400">Bis zu drei Wörter. Wenn sie nicht gemeinsam passen, werden weniger angezeigt – immer vollständig und mittig ausgerichtet.</p>
                         <select id="visible-words-setting" onchange="app.setVisibleWords(this.value)" class="mt-3 min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
                             <option value="1">1 Wort (Standard)</option>
                             <option value="2">2 Wörter</option>
                             <option value="3">3 Wörter</option>
                         </select>
+                    </section>
+                </section>
+
+                <section class="mb-8" aria-labelledby="library-settings-heading">
+                    <h3 id="library-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Bücher</h3>
+                    <div class="rounded-2xl bg-app-surface p-4">
+                        <p class="text-base font-bold text-app-text">Bücher verwalten</p>
+                        <p class="mb-3 mt-1 text-sm text-gray-400">Lege TXT-Dateien in Unterordner mit dem Genre als Namen (z. B. „Books/Fantasy“ oder „Books/Sachbuecher“) und lade den Ordner hier. Der Dateiname wird zum Buchtitel.</p>
+                        <input id="books-folder-input" type="file" accept=".txt,text/plain" multiple webkitdirectory directory class="hidden" onchange="app.importBooks(this.files)">
+                        <button onclick="document.getElementById('books-folder-input').click()" class="w-full rounded-xl bg-app-bg py-3 font-bold text-app-text active:bg-app-surface-light">Books-Ordner auswählen</button>
+                        <p id="books-import-status" class="mt-2 text-xs text-gray-500" aria-live="polite">Auch auf einem Webserver können Dateien über Books/books.json automatisch geladen werden.</p>
                     </div>
+                </section>
+
+                <section class="mb-8" aria-labelledby="help-settings-heading">
+                    <h3 id="help-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Hilfe</h3>
+                    <button onclick="app.startTutorial('profile')" class="flex w-full items-center justify-between rounded-2xl bg-app-surface p-4 text-left transition-colors active:bg-app-surface-light">
+                    <span>
+                        <span class="block text-base font-bold text-app-text">Tutorial</span>
+                        <span class="block text-sm text-gray-400 mt-1">Einführung und Lesetest erneut starten</span>
+                    </span>
+                    <span class="text-app-accent text-xl font-bold" aria-hidden="true">→</span>
+                    </button>
                 </section>
             </div>
         </div>
