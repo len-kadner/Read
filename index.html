@@ -1120,7 +1120,7 @@
                         <label for="friend-code-value" class="block text-xs font-bold uppercase tracking-wider text-gray-400">Deine Friend ID</label>
                         <div class="mt-2 flex items-center gap-2">
                             <code id="friend-code-value" class="block min-w-0 flex-1 truncate text-sm font-bold text-app-text sm:whitespace-normal sm:break-all" title="Friend ID">Wird geladen …</code>
-                            <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text">Kopieren</button>
+                            <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text transition-all duration-200">Kopieren</button>
                         </div>
                     </div>
                     <form class="mt-4" onsubmit="app.addFriend(event)">
@@ -1405,6 +1405,8 @@
                 app.state.authSession = null;
                 app.state.cloudSyncReady = false;
                 app.state.friendCode = null;
+                clearTimeout(app.state.friendCopyResetTimer);
+                app.state.friendCodeCopied = false;
                 app.state.friendLeaderboard = [];
                 app.state.friendsLoading = false;
                 app.state.friendStatus = 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.';
@@ -1690,6 +1692,8 @@
                 authSession: null,
                 cloudSyncReady: false,
                 friendCode: null,
+                friendCodeCopied: false,
+                friendCopyResetTimer: null,
                 friendLeaderboard: [],
                 friendsLoading: false,
                 friendStatus: 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.',
@@ -2754,7 +2758,13 @@
                 if (statusElement) statusElement.textContent = this.state.friendStatus;
                 if (input) input.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
                 if (addButton) addButton.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
-                if (copyButton) copyButton.disabled = !this.state.friendCode || this.state.friendsLoading;
+                if (copyButton) {
+                    copyButton.disabled = !this.state.friendCode || this.state.friendsLoading;
+                    copyButton.textContent = this.state.friendCodeCopied ? 'Kopiert' : 'Kopieren';
+                    copyButton.classList.toggle('bg-app-accent', this.state.friendCodeCopied);
+                    copyButton.classList.toggle('text-app-bg', this.state.friendCodeCopied);
+                    copyButton.classList.toggle('scale-105', this.state.friendCodeCopied);
+                }
                 if (refreshButton) refreshButton.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
                 if (!list) return;
 
@@ -2788,7 +2798,7 @@
                         const removeButton = document.createElement('button');
                         removeButton.type = 'button';
                         removeButton.className = 'shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-gray-300 disabled:opacity-50';
-                        removeButton.textContent = 'Beenden';
+                        removeButton.textContent = 'remove';
                         removeButton.setAttribute('aria-label', `Freundschaft mit ${friend.display_name} beenden`);
                         removeButton.disabled = this.state.friendsLoading;
                         removeButton.addEventListener('click', () => this.removeFriend(friend.friend_code));
@@ -2885,7 +2895,13 @@
                 if (!this.state.friendCode) return;
                 try {
                     await navigator.clipboard.writeText(this.state.friendCode);
+                    clearTimeout(this.state.friendCopyResetTimer);
+                    this.state.friendCodeCopied = true;
                     this.state.friendStatus = 'Friend ID wurde in die Zwischenablage kopiert.';
+                    this.state.friendCopyResetTimer = setTimeout(() => {
+                        this.state.friendCodeCopied = false;
+                        this.renderFriends();
+                    }, 1500);
                 } catch (error) {
                     console.error('Friend ID konnte nicht kopiert werden.', error);
                     this.state.friendStatus = 'Kopieren nicht möglich. Markiere die Friend ID und kopiere sie manuell.';
