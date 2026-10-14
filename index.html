@@ -1005,6 +1005,32 @@
                     </div>
                 </section>
 
+                <section id="friends-panel" class="mb-8 rounded-2xl border border-app-accent/30 bg-app-surface p-4" aria-labelledby="friends-heading">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 id="friends-heading" class="text-base font-bold text-app-text">Freunde & Rangliste</h3>
+                            <p class="mt-1 text-sm text-gray-400">Teile deine ID und vergleiche deine XP.</p>
+                        </div>
+                        <button id="friends-refresh-btn" type="button" onclick="app.refreshFriends()" aria-label="Freundes-Rangliste aktualisieren" class="shrink-0 rounded-xl bg-app-bg px-3 py-2 text-sm font-bold text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Aktualisieren</button>
+                    </div>
+                    <div class="mt-4 rounded-xl bg-app-bg p-3">
+                        <label for="friend-code-value" class="block text-xs font-bold uppercase tracking-wider text-gray-400">Deine Friend ID</label>
+                        <div class="mt-2 flex items-center gap-2">
+                            <code id="friend-code-value" class="min-w-0 flex-1 break-all text-sm font-bold text-app-text">Wird geladen …</code>
+                            <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text">Kopieren</button>
+                        </div>
+                    </div>
+                    <form class="mt-4" onsubmit="app.addFriend(event)">
+                        <label for="friend-code-input" class="block text-sm font-bold text-app-text">Freund mit ID hinzufügen</label>
+                        <div class="mt-2 flex gap-2">
+                            <input id="friend-code-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="36" placeholder="UUID des Freundes" class="min-w-0 flex-1 rounded-xl border border-app-surface-light bg-app-bg px-3 py-3 text-sm text-app-text placeholder:text-gray-500 focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                            <button id="friend-add-btn" type="submit" class="shrink-0 rounded-xl bg-app-accent px-4 py-3 text-sm font-bold text-app-bg disabled:cursor-not-allowed disabled:opacity-50">Hinzufügen</button>
+                        </div>
+                    </form>
+                    <p id="friends-status" class="mt-3 text-sm text-gray-400" aria-live="polite">Freundesliste wird geladen …</p>
+                    <ol id="friends-leaderboard" class="mt-3 space-y-2" aria-label="Rangliste nach XP"></ol>
+                </section>
+
                 <section id="gamification-panel" class="mb-8 rounded-2xl border border-app-accent/30 bg-app-surface p-4" aria-labelledby="gamification-heading">
                     <div class="flex items-start justify-between gap-4">
                         <div>
@@ -1365,6 +1391,10 @@
                 activeCloudUserId = null;
                 app.state.authSession = null;
                 app.state.cloudSyncReady = false;
+                app.state.friendCode = null;
+                app.state.friendLeaderboard = [];
+                app.state.friendsLoading = false;
+                app.state.friendStatus = 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.';
                 app.state.progressByBook = {};
                 app.state.totalWordsRead = 0;
                 app.state.streakDays = 0;
@@ -1385,6 +1415,7 @@
                 app.renderStreakStats();
                 app.renderGamification();
                 app.renderAchievements();
+                app.renderFriends();
                 app.renderAuthStatus();
             }
 
@@ -1448,6 +1479,23 @@
                 return data?.app_data ?? null;
             };
 
+            window.loadFriendsData = async function loadFriendsData() {
+                const client = await getSupabaseClient();
+                const [{ data: friendCode, error: codeError }, { data: leaderboard, error: leaderboardError }] = await Promise.all([
+                    client.rpc('get_my_friend_code'),
+                    client.rpc('get_my_friends_leaderboard')
+                ]);
+                if (codeError) throw codeError;
+                if (leaderboardError) throw leaderboardError;
+                return { friendCode, leaderboard };
+            };
+
+            window.addFriendByCode = async function addFriendByCode(friendCode) {
+                const client = await getSupabaseClient();
+                const { error } = await client.rpc('add_friend_by_code', { p_friend_code: friendCode });
+                if (error) throw error;
+            };
+
             window.saveUserDataToCloud = async function saveUserDataToCloud() {
                 if (!app.state.authSession || !app.state.cloudSyncReady) return;
                 const client = await getSupabaseClient();
@@ -1484,6 +1532,7 @@
                 const userId = session.user.id;
                 if (activeCloudUserId === userId && app.state.cloudSyncReady) {
                     app.renderAuthStatus();
+                    await app.refreshFriends();
                     return;
                 }
                 if (cloudLoadInProgress?.userId === userId) return cloudLoadInProgress.promise;
@@ -1502,6 +1551,7 @@
                         activeCloudUserId = userId;
                         app.state.cloudSyncReady = true;
                         app.renderAuthStatus();
+                        await app.refreshFriends();
                         if (cloudData === null) {
                             await window.saveUserDataToCloud();
                         }
@@ -1554,6 +1604,7 @@
                             app.state.authSession = null;
                             app.state.cloudSyncReady = false;
                             window.clearLocalReadingProgress();
+                            app.renderFriends();
                             app.renderAuthStatus();
                         }
                     } catch (error) {
@@ -1619,6 +1670,10 @@
                 readingPreference: null,
                 authSession: null,
                 cloudSyncReady: false,
+                friendCode: null,
+                friendLeaderboard: [],
+                friendsLoading: false,
+                friendStatus: 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.',
                 selectedTheme: 'classic',
                 animationsEnabled: true, // Tag/Nacht Zyklus
                 sceneByBook: {},
@@ -2657,6 +2712,152 @@
                 button.classList.toggle('bg-app-surface-light', signedIn);
                 button.classList.toggle('text-app-text', signedIn);
                 button.setAttribute('aria-label', signedIn ? 'Vom Cloud-Konto abmelden' : 'Mit Google anmelden');
+            },
+
+            renderFriends() {
+                const codeElement = document.getElementById('friend-code-value');
+                const statusElement = document.getElementById('friends-status');
+                const list = document.getElementById('friends-leaderboard');
+                const input = document.getElementById('friend-code-input');
+                const addButton = document.getElementById('friend-add-btn');
+                const copyButton = document.getElementById('friend-code-copy-btn');
+                const refreshButton = document.getElementById('friends-refresh-btn');
+                const signedIn = Boolean(this.state.authSession?.user);
+
+                if (codeElement) {
+                    codeElement.textContent = !signedIn
+                        ? 'Nach der Anmeldung verfügbar'
+                        : this.state.friendCode || 'Wird geladen …';
+                }
+                if (statusElement) statusElement.textContent = this.state.friendStatus;
+                if (input) input.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
+                if (addButton) addButton.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
+                if (copyButton) copyButton.disabled = !this.state.friendCode || this.state.friendsLoading;
+                if (refreshButton) refreshButton.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
+                if (!list) return;
+
+                list.replaceChildren();
+                if (!signedIn || !this.state.cloudSyncReady || this.state.friendsLoading) return;
+                if (this.state.friendLeaderboard.length === 0) {
+                    const emptyMessage = document.createElement('li');
+                    emptyMessage.className = 'rounded-xl bg-app-bg p-3 text-sm text-gray-400';
+                    emptyMessage.textContent = 'Noch keine Freunde hinzugefügt. Füge die Friend ID eines Freundes hinzu.';
+                    list.appendChild(emptyMessage);
+                    return;
+                }
+
+                this.state.friendLeaderboard.forEach((friend, index) => {
+                    const row = document.createElement('li');
+                    row.className = 'flex items-center justify-between gap-3 rounded-xl bg-app-bg p-3';
+                    const identity = document.createElement('div');
+                    identity.className = 'min-w-0';
+                    const name = document.createElement('p');
+                    name.className = 'truncate text-sm font-bold text-app-text';
+                    name.textContent = `${index + 1}. ${friend.display_name}${friend.is_self ? ' (Du)' : ''}`;
+                    const code = document.createElement('p');
+                    code.className = 'truncate text-xs text-gray-500';
+                    code.textContent = friend.friend_code;
+                    const xp = document.createElement('span');
+                    xp.className = 'shrink-0 text-sm font-bold text-app-accent';
+                    xp.textContent = `${this.formatWordCount(friend.xp_points)} XP`;
+                    identity.append(name, code);
+                    row.append(identity, xp);
+                    list.appendChild(row);
+                });
+            },
+
+            async refreshFriends() {
+                const userId = this.state.authSession?.user?.id;
+                if (!userId) {
+                    this.state.friendCode = null;
+                    this.state.friendLeaderboard = [];
+                    this.state.friendStatus = 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.';
+                    this.renderFriends();
+                    return false;
+                }
+                if (!this.state.cloudSyncReady) {
+                    this.state.friendStatus = 'Cloud-Konto wird geladen …';
+                    this.renderFriends();
+                    return false;
+                }
+
+                this.state.friendsLoading = true;
+                this.state.friendStatus = 'Freundesliste wird geladen …';
+                this.renderFriends();
+                try {
+                    const friendsData = await window.loadFriendsData();
+                    if (this.state.authSession?.user?.id !== userId) return;
+                    if (typeof friendsData.friendCode !== 'string' ||
+                        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(friendsData.friendCode) ||
+                        !Array.isArray(friendsData.leaderboard) ||
+                        friendsData.leaderboard.some(friend =>
+                            !friend ||
+                            typeof friend.friend_code !== 'string' ||
+                            typeof friend.display_name !== 'string' ||
+                            !Number.isSafeInteger(Number(friend.xp_points)) ||
+                            Number(friend.xp_points) < 0 ||
+                            typeof friend.is_self !== 'boolean')) {
+                        throw new Error('Die Antwort der Freundes-Rangliste hat ein ungültiges Format.');
+                    }
+                    this.state.friendCode = friendsData.friendCode;
+                    this.state.friendLeaderboard = friendsData.leaderboard
+                        .map(friend => ({ ...friend, xp_points: Number(friend.xp_points) }))
+                        .sort((a, b) => b.xp_points - a.xp_points || a.display_name.localeCompare(b.display_name));
+                    this.state.friendStatus = 'Freunde und du – sortiert nach XP.';
+                    return true;
+                } catch (error) {
+                    console.error('Freundesliste konnte nicht geladen werden.', error);
+                    this.state.friendStatus = `Freundesliste konnte nicht geladen werden: ${error.message || 'Unbekannter Fehler'}`;
+                    return false;
+                } finally {
+                    this.state.friendsLoading = false;
+                    this.renderFriends();
+                }
+            },
+
+            async addFriend(event) {
+                event.preventDefault();
+                const input = document.getElementById('friend-code-input');
+                const friendCode = input?.value.trim();
+                if (!this.state.authSession || !this.state.cloudSyncReady) {
+                    this.state.friendStatus = 'Melde dich zuerst mit deinem Cloud-Konto an.';
+                    this.renderFriends();
+                    return;
+                }
+                if (!friendCode || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(friendCode)) {
+                    this.state.friendStatus = 'Bitte gib eine gültige Friend ID im UUID-Format ein.';
+                    this.renderFriends();
+                    input?.focus();
+                    return;
+                }
+
+                this.state.friendsLoading = true;
+                this.state.friendStatus = 'Freund wird hinzugefügt …';
+                this.renderFriends();
+                try {
+                    await window.addFriendByCode(friendCode);
+                    if (input) input.value = '';
+                    const refreshed = await this.refreshFriends();
+                    if (refreshed) this.state.friendStatus = 'Freund erfolgreich hinzugefügt.';
+                } catch (error) {
+                    console.error('Freund konnte nicht hinzugefügt werden.', error);
+                    this.state.friendStatus = `Freund konnte nicht hinzugefügt werden: ${error.message || 'Unbekannter Fehler'}`;
+                } finally {
+                    this.state.friendsLoading = false;
+                    this.renderFriends();
+                }
+            },
+
+            async copyFriendCode() {
+                if (!this.state.friendCode) return;
+                try {
+                    await navigator.clipboard.writeText(this.state.friendCode);
+                    this.state.friendStatus = 'Friend ID wurde in die Zwischenablage kopiert.';
+                } catch (error) {
+                    console.error('Friend ID konnte nicht kopiert werden.', error);
+                    this.state.friendStatus = 'Kopieren nicht möglich. Markiere die Friend ID und kopiere sie manuell.';
+                }
+                this.renderFriends();
             },
 
             renderGamification() {
