@@ -125,6 +125,36 @@
             border-color: #d1d5db;
         }
 
+        .leaderboard-name {
+            overflow-wrap: anywhere;
+        }
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 2rem minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 0.25rem;
+        }
+
+        .leaderboard-row.is-self {
+            border-radius: 0.75rem;
+            background: rgb(var(--app-accent) / 0.08);
+        }
+
+        .leaderboard-row:first-child .leaderboard-rank,
+        .leaderboard-row.is-self .leaderboard-rank {
+            color: rgb(var(--app-accent));
+            font-weight: 800;
+        }
+
+        @media (max-width: 400px) {
+            .leaderboard-actions {
+                grid-column: 2 / 5;
+                justify-self: end;
+            }
+        }
+
         body {
             background-color: rgb(var(--app-bg));
             color: rgb(var(--app-text));
@@ -1350,9 +1380,9 @@
 
                     <section class="min-w-0 rounded-3xl border border-app-surface-light bg-app-surface p-5 sm:p-6" aria-labelledby="friends-leaderboard-heading">
                         <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-app-accent">Eure Lese-Challenge</p>
-                                <h2 id="friends-leaderboard-heading" class="mt-1 text-xl font-bold text-app-text">Rangliste</h2>
+                            <div class="min-w-0">
+                                <h2 id="friends-leaderboard-heading" class="text-xl font-bold text-app-text">Rangliste</h2>
+                                <p class="mt-1 text-sm text-gray-400">Nach gesammelten XP sortiert.</p>
                             </div>
                             <button id="friends-refresh-btn" type="button" onclick="app.refreshFriends()" aria-label="Freundes-Rangliste aktualisieren" class="shrink-0 rounded-xl bg-app-bg px-3 py-2 text-sm font-bold text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50">
                                 <span class="inline-flex items-center gap-2">
@@ -1362,7 +1392,8 @@
                             </button>
                         </div>
                         <p id="friends-status" class="mt-4 rounded-xl bg-app-bg px-4 py-3 text-sm text-gray-400" aria-live="polite">Freundesliste wird geladen …</p>
-                        <ol id="friends-leaderboard" class="mt-3 space-y-2" aria-label="Rangliste nach XP"></ol>
+                        <p id="friends-leaderboard-summary" class="mt-4 hidden text-sm text-gray-400" aria-live="polite"></p>
+                        <ol id="friends-leaderboard" class="mt-3 divide-y divide-app-surface-light" aria-label="Rangliste nach XP"></ol>
                     </section>
                 </section>
             </main>
@@ -3136,6 +3167,7 @@
                 const codeElement = document.getElementById('friend-code-value');
                 const statusElement = document.getElementById('friends-status');
                 const list = document.getElementById('friends-leaderboard');
+                const summary = document.getElementById('friends-leaderboard-summary');
                 const input = document.getElementById('friend-code-input');
                 const addButton = document.getElementById('friend-add-btn');
                 const copyButton = document.getElementById('friend-code-copy-btn');
@@ -3160,44 +3192,65 @@
                 }
                 if (refreshButton) refreshButton.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
                 if (!list) return;
-
                 list.replaceChildren();
+                if (summary) {
+                    summary.classList.add('hidden');
+                    summary.textContent = '';
+                }
                 if (!signedIn || !this.state.cloudSyncReady || this.state.friendsLoading) return;
                 if (this.state.friendLeaderboard.length === 0) {
                     const emptyMessage = document.createElement('li');
-                    emptyMessage.className = 'rounded-xl bg-app-bg p-3 text-sm text-gray-400';
-                    emptyMessage.textContent = 'Noch keine Freunde hinzugefügt. Füge die Friend ID eines Freundes hinzu.';
+                    emptyMessage.className = 'py-5 text-sm text-gray-400';
+                    emptyMessage.textContent = 'Noch niemand in der Rangliste.';
+                    const focusButton = document.createElement('button');
+                    focusButton.type = 'button';
+                    focusButton.className = 'ml-3 min-h-10 rounded-lg px-3 py-2 text-sm font-bold text-app-accent underline decoration-app-accent/50 underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent';
+                    focusButton.textContent = 'Freund hinzufügen';
+                    focusButton.addEventListener('click', () => input?.focus());
+                    emptyMessage.appendChild(focusButton);
                     list.appendChild(emptyMessage);
                     return;
                 }
 
-                this.state.friendLeaderboard.forEach((friend, index) => {
+                const leaderboard = this.state.friendLeaderboard;
+                const ownRank = leaderboard.findIndex(friend => friend.is_self) + 1;
+                if (summary) {
+                    summary.textContent = leaderboard.length === 1 && leaderboard[0].is_self
+                        ? 'Du bist bisher allein in der Rangliste.'
+                        : `${leaderboard.length} ${leaderboard.length === 1 ? 'Person' : 'Personen'}${ownRank ? ` · Dein Platz: ${ownRank}` : ''}`;
+                    summary.classList.remove('hidden');
+                }
+
+                const createRemoveButton = friend => {
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.className = 'min-h-10 shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-gray-400 transition-colors hover:bg-app-surface-light hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent disabled:opacity-50';
+                    removeButton.textContent = 'Entfernen';
+                    removeButton.setAttribute('aria-label', `Freundschaft mit ${friend.display_name} beenden`);
+                    removeButton.disabled = this.state.friendsLoading;
+                    removeButton.addEventListener('click', () => this.removeFriend(friend.friend_code));
+                    return removeButton;
+                };
+
+                leaderboard.forEach((friend, index) => {
+                    const rank = index + 1;
                     const row = document.createElement('li');
-                    row.className = 'flex items-center justify-between gap-3 rounded-xl bg-app-bg p-3';
-                    const identity = document.createElement('div');
-                    identity.className = 'min-w-0';
+                    row.className = `leaderboard-row${friend.is_self ? ' is-self' : ''}`;
+                    const rankElement = document.createElement('span');
+                    rankElement.className = 'leaderboard-rank text-sm tabular-nums text-gray-400';
+                    rankElement.textContent = String(rank).padStart(2, '0');
                     const name = document.createElement('p');
-                    name.className = 'truncate text-sm font-bold text-app-text';
-                    name.textContent = `${index + 1}. ${friend.display_name}${friend.is_self ? ' (Du)' : ''}`;
-                    const code = document.createElement('p');
-                    code.className = 'truncate text-xs text-gray-500';
-                    code.textContent = friend.friend_code;
-                    const xp = document.createElement('span');
-                    xp.className = 'shrink-0 text-sm font-bold text-app-accent';
-                    xp.textContent = `${this.formatWordCount(friend.xp_points)} XP`;
-                    identity.append(name, code);
-                    row.appendChild(identity);
-                    if (!friend.is_self) {
-                        const removeButton = document.createElement('button');
-                        removeButton.type = 'button';
-                        removeButton.className = 'shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-gray-300 disabled:opacity-50';
-                        removeButton.textContent = 'remove';
-                        removeButton.setAttribute('aria-label', `Freundschaft mit ${friend.display_name} beenden`);
-                        removeButton.disabled = this.state.friendsLoading;
-                        removeButton.addEventListener('click', () => this.removeFriend(friend.friend_code));
-                        row.appendChild(removeButton);
-                    }
-                    row.appendChild(xp);
+                    name.className = 'leaderboard-name min-w-0 flex-1 text-sm font-bold leading-snug text-app-text';
+                    name.textContent = friend.is_self
+                        ? friend.display_name.trim().toLocaleLowerCase('de-DE') === 'du'
+                            ? 'Du'
+                            : `${friend.display_name} (du)`
+                        : friend.display_name;
+                    const points = document.createElement('span');
+                    points.className = 'whitespace-nowrap text-right text-sm tabular-nums text-app-text';
+                    points.textContent = `${this.formatWordCount(friend.xp_points)} XP`;
+                    row.append(rankElement, name, points);
+                    if (!friend.is_self) row.appendChild(createRemoveButton(friend));
                     list.appendChild(row);
                 });
             },
@@ -3573,10 +3626,10 @@
                         <div class="bg-app-surface rounded-2xl p-5 mb-4">
                             <p id="reading-test-passage" class="text-app-text text-base leading-relaxed">Am frühen Morgen lag die Stadt noch still unter einem hellen Himmel. In den Fenstern spiegelte sich das erste Licht, während die Straßen langsam erwachten. Ein Fahrrad rollte über das Kopfsteinpflaster. Die Bäckerin öffnete ihre Tür, und der Duft von frischem Brot zog bis zur nächsten Ecke. Heute hatte niemand es eilig. Für einen kurzen Moment schien der ganze Tag voller Möglichkeiten zu sein.</p>
                         </div>
-                        <p id="reading-test-status" class="text-center text-sm text-gray-400 mb-4">${this.state.readingTestStartedAt !== null ? 'Lies in deinem normalen Tempo … 0 Sek.' : this.state.readingTestWpm === null ? 'Bereit? Starte den Test und tippe nach dem Lesen auf „Fertig“.' : `Dein Ergebnis: etwa ${this.state.readingTestWpm} Wörter pro Minute.`}</p>
+                        <p id="reading-test-status" class="text-center text-sm text-gray-400 mb-4">${this.state.readingTestStartedAt !== null ? 'Lies in deinem normalen Tempo … 0 Sek.' : this.state.readingTestWpm === null ? 'Bereit? Starte den Test und tippe nach dem Lesen auf „Fertig“.' : `Dein Ergebnis: etwa ${this.state.readingTestWpm} Wörter pro Minute. Tippe unten auf „Weiter“, um fortzufahren.`}</p>
                         <div class="flex space-x-3">
                             <button onclick="app.startReadingTest()" class="flex-1 py-3 rounded-xl bg-app-surface text-app-text font-bold">${this.state.readingTestStartedAt === null ? 'Test starten' : 'Neu starten'}</button>
-                            <button id="reading-test-finish" onclick="app.finishReadingTest()" class="flex-1 py-3 rounded-xl bg-app-accent text-app-bg font-bold" ${this.state.readingTestStartedAt === null ? 'disabled' : ''}>Fertig</button>
+                            <button id="reading-test-finish" onclick="app.finishReadingTest()" class="flex-1 rounded-xl py-3 font-bold transition-colors ${this.state.readingTestStartedAt === null ? 'cursor-not-allowed bg-app-surface text-gray-500' : 'bg-app-accent text-app-bg'}" ${this.state.readingTestStartedAt === null ? 'disabled aria-disabled="true"' : ''}>Fertig</button>
                         </div>
                         <br>
                         <p class="text-gray-400 text-sm leading-relaxed mb-5">Lies den Abschnitt einmal in deinem normalen Tempo (mindestens 5 Sekunden). Die Zeit wird gemessen und daraus deine ungefähre Lesegeschwindigkeit in Wörtern pro Minute berechnet.</p>
