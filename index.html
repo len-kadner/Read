@@ -326,6 +326,31 @@
 
         #screen-library::-webkit-scrollbar { display: none; }
 
+        #global-bottom-nav {
+            align-items: center;
+            padding: 0.65rem 0.5rem max(0.75rem, env(safe-area-inset-bottom));
+        }
+
+        #global-bottom-nav .nav-btn {
+            position: relative;
+            z-index: 1;
+            min-width: 0;
+            min-height: 2.75rem;
+            justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+            #global-bottom-nav {
+                gap: clamp(0.5rem, 3vw, 2.5rem);
+            }
+
+            #global-bottom-nav .nav-btn {
+                flex: 0 0 5.5rem;
+                width: 5.5rem;
+                min-width: 5.5rem;
+            }
+        }
+
         #external-book-results {
             display: grid;
             gap: 0.5rem;
@@ -1166,8 +1191,8 @@
                 <h1 id="friends-heading" class="mt-2 text-3xl font-bold text-app-text">Freunde</h1>
                 <p class="mt-1 text-sm text-gray-400">Verbinde dich mit Freunden und vergleiche eure Fortschritte.</p>
             </header>
-            <main class="friends-content flex-1 overflow-y-auto no-scrollbar px-6 py-6 pb-28">
-                <section id="friends-panel" class="space-y-5" aria-labelledby="friends-heading">
+            <main class="friends-content flex-1 overflow-x-hidden overflow-y-auto no-scrollbar px-6 py-6 pb-28">
+                <section id="friends-panel" class="min-w-0 space-y-5" aria-labelledby="friends-heading">
                     <div class="relative overflow-hidden rounded-3xl border border-app-accent/25 bg-gradient-to-br from-app-surface via-app-surface to-app-bg p-5 sm:p-7">
                         <div class="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-app-accent/10 blur-2xl" aria-hidden="true"></div>
                         <div class="relative flex items-start gap-4">
@@ -1181,8 +1206,8 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <section class="rounded-3xl border border-app-surface-light bg-app-surface p-5" aria-labelledby="friend-code-heading">
+                    <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+                        <section class="min-w-0 rounded-3xl border border-app-surface-light bg-app-surface p-5" aria-labelledby="friend-code-heading">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-app-bg text-app-accent" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><path d="M3 14h7v7H3z"></path></svg>
@@ -1198,7 +1223,7 @@
                             </div>
                         </section>
 
-                        <section class="rounded-3xl border border-app-surface-light bg-app-surface p-5" aria-labelledby="friend-add-heading">
+                        <section class="min-w-0 rounded-3xl border border-app-surface-light bg-app-surface p-5" aria-labelledby="friend-add-heading">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-app-bg text-app-accent" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
@@ -1218,8 +1243,8 @@
                         </section>
                     </div>
 
-                    <section class="rounded-3xl border border-app-surface-light bg-app-surface p-5 sm:p-6" aria-labelledby="friends-leaderboard-heading">
-                        <div class="flex items-center justify-between gap-3">
+                    <section class="min-w-0 rounded-3xl border border-app-surface-light bg-app-surface p-5 sm:p-6" aria-labelledby="friends-leaderboard-heading">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-[0.16em] text-app-accent">Eure Lese-Challenge</p>
                                 <h2 id="friends-leaderboard-heading" class="mt-1 text-xl font-bold text-app-text">Rangliste</h2>
@@ -1414,13 +1439,13 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <span class="text-[11px] font-bold">Bibliothek</span>
             </button>
-            <button id="nav-btn-read" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.resumeReading()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                <span class="text-[11px] font-bold">Lesen</span>
-            </button>
             <button id="nav-btn-friends" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.navigateTo('friends')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 <span class="text-[11px] font-bold">Freunde</span>
+            </button>
+            <button id="nav-btn-read" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.resumeReading()" aria-label="Lesen fortsetzen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1 text-app-accent" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <span class="text-[11px] font-bold">Lesen</span>
             </button>
             <button id="nav-btn-achievements" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.navigateTo('achievements')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
