@@ -75,9 +75,58 @@
             --app-surface-light: 64 64 64;
         }
 
+        body[data-color-mode="light"] {
+            --app-bg: 249 250 251;
+            --app-text: 24 24 25;
+            --app-accent: 176 82 9;
+            --app-surface: 255 255 255;
+            --app-surface-light: 229 231 235;
+            color-scheme: light;
+        }
+
+        body[data-color-mode="dark"] {
+            color-scheme: dark;
+        }
+
+        body[data-color-mode="light"][data-theme="colorful"] {
+            --app-bg: 250 245 255;
+            --app-text: 44 20 68;
+            --app-accent: 190 24 93;
+            --app-surface: 255 255 255;
+            --app-surface-light: 237 220 247;
+        }
+
+        body[data-color-mode="light"][data-theme="monochrome"] {
+            --app-bg: 250 250 250;
+            --app-text: 0 0 0;
+            --app-accent: 20 20 20;
+            --app-surface: 240 240 240;
+            --app-surface-light: 212 212 212;
+        }
+
         body[data-theme="colorful"] #app-container,
         body[data-theme="colorful"] .screen {
             background-image: linear-gradient(155deg, #281344 0%, #351749 48%, #191c46 100%);
+        }
+
+        body[data-color-mode="light"][data-theme="colorful"] #app-container,
+        body[data-color-mode="light"][data-theme="colorful"] .screen {
+            background-image: none;
+        }
+
+        body[data-color-mode="light"] #app-container .text-gray-300,
+        body[data-color-mode="light"] #app-container .text-gray-400,
+        body[data-color-mode="light"] #app-container .text-gray-500,
+        body[data-color-mode="light"] #app-container .text-gray-600 {
+            color: #4b5563;
+        }
+
+        body[data-color-mode="light"] #app-container input::placeholder {
+            color: #6b7280;
+        }
+
+        body[data-color-mode="light"] #app-container {
+            border-color: #d1d5db;
         }
 
         body {
@@ -90,8 +139,16 @@
             min-height: 100dvh;
             margin: 0;
             overflow: hidden;
-            font-family: 'Atkinson Hyperlegible', sans-serif;
+            font-family: var(--app-font-family, 'Atkinson Hyperlegible', system-ui, sans-serif);
             -webkit-tap-highlight-color: transparent;
+        }
+
+        #app-container .font-sans {
+            font-family: var(--app-font-family, 'Atkinson Hyperlegible', system-ui, sans-serif);
+        }
+
+        html {
+            font-size: calc(100% * var(--font-scale, 1));
         }
 
         button {
@@ -211,6 +268,16 @@
                 width: min(100%, 720px);
                 margin-left: auto;
                 margin-right: auto;
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            body:not([data-color-mode]) {
+                --app-bg: 249 250 251;
+                --app-text: 24 24 25;
+                --app-accent: 176 82 9;
+                --app-surface: 255 255 255;
+                --app-surface-light: 229 231 235;
             }
         }
 
@@ -928,6 +995,21 @@
     </style>
 </head>
 <body>
+    <script>
+        try {
+            const savedMode = localStorage.getItem('read-color-mode');
+            const mode = ['system', 'light', 'dark'].includes(savedMode) ? savedMode : 'system';
+            const systemIsLight = window.matchMedia &&
+                window.matchMedia('(prefers-color-scheme: light)').matches;
+            document.body.dataset.colorMode = mode === 'system'
+                ? (systemIsLight ? 'light' : 'dark')
+                : mode;
+            const themeColor = document.querySelector('meta[name="theme-color"]');
+            if (themeColor) themeColor.content = document.body.dataset.colorMode === 'light' ? '#F9FAFB' : '#181819';
+        } catch (error) {
+            console.error('Farbschema konnte nicht initialisiert werden.', error);
+        }
+    </script>
 
     <div id="app-container">
         
@@ -1102,6 +1184,30 @@
                 <section class="mb-8" aria-labelledby="appearance-settings-heading">
                     <h3 id="appearance-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Darstellung</h3>
                     <div class="rounded-2xl bg-app-surface p-4">
+                        <label for="color-mode-setting" class="block text-base font-bold text-app-text">Hell-/Dunkelmodus</label>
+                        <p class="mb-3 mt-1 text-sm text-gray-400">„System“ übernimmt die Anzeigeeinstellung deines Geräts.</p>
+                        <select id="color-mode-setting" onchange="app.setColorMode(this.value)" class="min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                            <option value="system">Wie Systemeinstellung</option>
+                            <option value="light">Hell</option>
+                            <option value="dark">Dunkel</option>
+                        </select>
+                    </div>
+                    <div class="mt-3 rounded-2xl bg-app-surface p-4">
+                        <h4 class="text-base font-bold text-app-text">Schrift & Lesbarkeit</h4>
+                        <label for="font-size-setting" class="mt-3 block text-sm font-bold text-app-text">Schriftgröße</label>
+                        <select id="font-size-setting" onchange="app.setFontSize(this.value)" class="mt-2 min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                            <option value="100">Normal (100%)</option>
+                            <option value="112.5">Groß (112,5%)</option>
+                            <option value="125">Sehr groß (125%)</option>
+                        </select>
+                        <label for="font-family-setting" class="mt-3 block text-sm font-bold text-app-text">Schriftart</label>
+                        <select id="font-family-setting" onchange="app.setFontFamily(this.value)" class="mt-2 min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                            <option value="atkinson">Atkinson Hyperlegible</option>
+                            <option value="system">Systemschrift</option>
+                            <option value="serif">Serifen (Georgia)</option>
+                        </select>
+                    </div>
+                    <div class="mt-3 rounded-2xl bg-app-surface p-4">
                         <p class="text-base font-bold text-app-text">Design</p>
                         <p class="mb-3 mt-1 text-sm text-gray-400">Du kannst das Design jederzeit wechseln.</p>
                         <div id="settings-theme-options" class="space-y-3"></div>
@@ -1805,6 +1911,9 @@
                 friendsLoading: false,
                 friendStatus: 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.',
                 selectedTheme: 'classic',
+                colorMode: 'system',
+                fontSize: '100',
+                fontFamily: 'atkinson',
                 animationsEnabled: true, // Tag/Nacht Zyklus
                 sceneByBook: {},
                 currentScene: 'coast',
@@ -2022,12 +2131,32 @@
                     this.state.selectedTheme = savedTheme;
                     this.applyTheme(savedTheme);
                 }
+                const savedColorMode = this.readSetting('read-color-mode');
+                if (['system', 'light', 'dark'].includes(savedColorMode)) {
+                    this.state.colorMode = savedColorMode;
+                }
+                const savedFontSize = this.readSetting('read-font-size');
+                if (['100', '112.5', '125'].includes(savedFontSize)) {
+                    this.state.fontSize = savedFontSize;
+                }
+                const savedFontFamily = this.readSetting('read-font-family');
+                if (['atkinson', 'system', 'serif'].includes(savedFontFamily)) {
+                    this.state.fontFamily = savedFontFamily;
+                }
+                this.applyColorMode(this.state.colorMode);
+                this.applyFontSize(this.state.fontSize);
+                this.applyFontFamily(this.state.fontFamily);
+                const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: light)');
+                colorSchemeQuery.addEventListener('change', () => {
+                    if (this.state.colorMode === 'system') this.applyColorMode('system');
+                });
                 if (this.readSetting('read-onboarding-complete') === 'true') {
                     this.navigateTo('library');
                 } else {
                     this.renderTutorial();
                 }
                 this.renderSettingsThemeOptions();
+                this.updateAppearanceControls();
                 this.updateVisibleWordsControl();
                 this.updateSprintModeControl();
                 this.updateSprintScreen();
@@ -2744,6 +2873,9 @@
                         visibleWords: this.state.visibleWords,
                         sprintMode: this.state.sprintMode,
                         selectedTheme: this.state.selectedTheme,
+                        colorMode: this.state.colorMode,
+                        fontSize: this.state.fontSize,
+                        fontFamily: this.state.fontFamily,
                         animationsEnabled: this.state.animationsEnabled,
                         gamificationEnabled: this.state.gamificationEnabled,
                         readingPreference: this.state.readingPreference,
@@ -2842,6 +2974,17 @@
                     !['classic', 'colorful', 'monochrome'].includes(settings.selectedTheme)) {
                     throw new Error('Das Design im Cloud-Profil ist ungültig.');
                 }
+                if (settings.colorMode !== undefined &&
+                    !['system', 'light', 'dark'].includes(settings.colorMode)) {
+                    throw new Error('Das Farbschema im Cloud-Profil ist ungültig.');
+                }
+                if (settings.fontSize !== undefined && !['100', '112.5', '125'].includes(settings.fontSize)) {
+                    throw new Error('Die Schriftgröße im Cloud-Profil ist ungültig.');
+                }
+                if (settings.fontFamily !== undefined &&
+                    !['atkinson', 'system', 'serif'].includes(settings.fontFamily)) {
+                    throw new Error('Die Schriftart im Cloud-Profil ist ungültig.');
+                }
                 if (settings.animationsEnabled !== undefined && typeof settings.animationsEnabled !== 'boolean' ||
                     settings.gamificationEnabled !== undefined && typeof settings.gamificationEnabled !== 'boolean') {
                     throw new Error('Eine Einstellung im Cloud-Profil ist ungültig.');
@@ -2888,6 +3031,12 @@
                     this.state.selectedTheme = settings.selectedTheme;
                     this.applyTheme(settings.selectedTheme);
                 }
+                if (settings.colorMode !== undefined) this.state.colorMode = settings.colorMode;
+                if (settings.fontSize !== undefined) this.state.fontSize = settings.fontSize;
+                if (settings.fontFamily !== undefined) this.state.fontFamily = settings.fontFamily;
+                this.applyColorMode(this.state.colorMode);
+                this.applyFontSize(this.state.fontSize);
+                this.applyFontFamily(this.state.fontFamily);
                 if (settings.animationsEnabled !== undefined) this.state.animationsEnabled = settings.animationsEnabled;
                 if (settings.gamificationEnabled !== undefined) this.state.gamificationEnabled = settings.gamificationEnabled;
                 if (settings.readingPreference !== undefined) this.state.readingPreference = settings.readingPreference;
@@ -2923,6 +3072,9 @@
                 this.saveSetting('read-visible-words', String(this.state.visibleWords));
                 this.saveSetting('read-sprint-mode', String(this.state.sprintMode));
                 this.saveSetting('read-theme', this.state.selectedTheme);
+                this.saveSetting('read-color-mode', this.state.colorMode);
+                this.saveSetting('read-font-size', this.state.fontSize);
+                this.saveSetting('read-font-family', this.state.fontFamily);
                 this.saveSetting('read-animations', String(this.state.animationsEnabled));
                 this.saveSetting('read-preference', this.state.readingPreference || '');
                 this.saveSetting('read-last-book', this.state.currentBookId === null ? '' : String(this.state.currentBookId));
@@ -2937,6 +3089,7 @@
                 this.renderGamification();
                 this.renderAchievements();
                 this.updateWpmDisplays();
+                this.updateAppearanceControls();
                 this.updateVisibleWordsControl();
                 this.updateSprintModeControl();
                 this.updateReadyUI();
@@ -3545,6 +3698,61 @@
                     monochrome: 'monochrome'
                 };
                 document.body.dataset.theme = themeNames[theme] || '';
+            },
+
+            applyColorMode(mode) {
+                const isSystemMode = mode === 'system';
+                const systemIsLight = isSystemMode &&
+                    window.matchMedia('(prefers-color-scheme: light)').matches;
+                const resolvedMode = isSystemMode
+                    ? (systemIsLight ? 'light' : 'dark')
+                    : mode;
+                document.body.dataset.colorMode = resolvedMode;
+                const themeColor = document.querySelector('meta[name="theme-color"]');
+                if (themeColor) themeColor.content = resolvedMode === 'light' ? '#F9FAFB' : '#181819';
+            },
+
+            applyFontSize(size) {
+                document.documentElement.style.setProperty('--font-scale', String(Number(size) / 100));
+            },
+
+            applyFontFamily(fontFamily) {
+                const families = {
+                    atkinson: "'Atkinson Hyperlegible', system-ui, sans-serif",
+                    system: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    serif: "Georgia, 'Times New Roman', serif"
+                };
+                document.body.style.setProperty('--app-font-family', families[fontFamily] || families.atkinson);
+            },
+
+            updateAppearanceControls() {
+                const colorMode = document.getElementById('color-mode-setting');
+                const fontSize = document.getElementById('font-size-setting');
+                const fontFamily = document.getElementById('font-family-setting');
+                if (colorMode) colorMode.value = this.state.colorMode;
+                if (fontSize) fontSize.value = this.state.fontSize;
+                if (fontFamily) fontFamily.value = this.state.fontFamily;
+            },
+
+            setColorMode(mode) {
+                if (!['system', 'light', 'dark'].includes(mode)) return;
+                this.state.colorMode = mode;
+                this.applyColorMode(mode);
+                this.saveSetting('read-color-mode', mode);
+            },
+
+            setFontSize(size) {
+                if (!['100', '112.5', '125'].includes(size)) return;
+                this.state.fontSize = size;
+                this.applyFontSize(size);
+                this.saveSetting('read-font-size', size);
+            },
+
+            setFontFamily(fontFamily) {
+                if (!['atkinson', 'system', 'serif'].includes(fontFamily)) return;
+                this.state.fontFamily = fontFamily;
+                this.applyFontFamily(fontFamily);
+                this.saveSetting('read-font-family', fontFamily);
             },
 
             nextTutorialStep() {
