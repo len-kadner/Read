@@ -179,7 +179,8 @@
             #screen-ready > .flex-1,
             #screen-ready > .px-6:last-child,
             #screen-read > div.flex-1,
-            #screen-achievements > .progress-content {
+            #screen-achievements > .progress-content,
+            #screen-friends > .friends-content {
                 width: min(100%, 960px);
                 margin-left: auto;
                 margin-right: auto;
@@ -245,7 +246,8 @@
             #screen-ready > .flex-1,
             #screen-ready > .px-6:last-child,
             #screen-read > div.flex-1,
-            #screen-achievements > .progress-content {
+            #screen-achievements > .progress-content,
+            #screen-friends > .friends-content {
                 width: min(100%, 1040px);
             }
 
@@ -1124,35 +1126,9 @@
         <div id="screen-achievements" class="screen">
             <div class="px-6 pt-12 pb-4 border-b border-app-surface">
                 <h1 class="text-3xl font-bold text-app-text">Fortschritt</h1>
-                <p class="text-sm text-gray-400 mt-1">Deine Erfolge und deine Rangliste mit Freunden.</p>
+                <p class="text-sm text-gray-400 mt-1">Deine persönlichen Lese-Erfolge auf einen Blick.</p>
             </div>
             <div class="progress-content flex-1 overflow-y-auto no-scrollbar px-6 py-6 pb-24">
-                <section id="friends-panel" class="mb-8 rounded-2xl border border-app-accent/30 bg-app-surface p-4" aria-labelledby="friends-heading">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h2 id="friends-heading" class="text-base font-bold text-app-text">Freunde & Rangliste</h2>
-                            <p class="mt-1 text-sm text-gray-400">Teile deine ID und vergleiche deine XP.</p>
-                        </div>
-                        <button id="friends-refresh-btn" type="button" onclick="app.refreshFriends()" aria-label="Freundes-Rangliste aktualisieren" class="shrink-0 rounded-xl bg-app-bg px-3 py-2 text-sm font-bold text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Aktualisieren</button>
-                    </div>
-                    <div class="mt-4 rounded-xl bg-app-bg p-3">
-                        <label for="friend-code-value" class="block text-xs font-bold uppercase tracking-wider text-gray-400">Deine Friend ID</label>
-                        <div class="mt-2 flex items-center gap-2">
-                            <code id="friend-code-value" class="block min-w-0 flex-1 truncate text-sm font-bold text-app-text sm:whitespace-normal sm:break-all" title="Friend ID">Wird geladen …</code>
-                            <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-lg bg-app-surface px-3 py-2 text-xs font-bold text-app-text transition-all duration-200">Kopieren</button>
-                        </div>
-                    </div>
-                    <form class="mt-4" onsubmit="app.addFriend(event)">
-                        <label for="friend-code-input" class="block text-sm font-bold text-app-text">Freund mit ID hinzufügen</label>
-                        <div class="mt-2 flex gap-2">
-                            <input id="friend-code-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="36" placeholder="UUID des Freundes" class="min-w-0 flex-1 rounded-xl border border-app-surface-light bg-app-bg px-3 py-3 text-sm text-app-text placeholder:text-gray-500 focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
-                            <button id="friend-add-btn" type="submit" class="shrink-0 rounded-xl bg-app-accent px-4 py-3 text-sm font-bold text-app-bg disabled:cursor-not-allowed disabled:opacity-50">Hinzufügen</button>
-                        </div>
-                    </form>
-                    <p id="friends-status" class="mt-3 text-sm text-gray-400" aria-live="polite">Freundesliste wird geladen …</p>
-                    <ol id="friends-leaderboard" class="mt-3 space-y-2" aria-label="Rangliste nach XP"></ol>
-                </section>
-
                 <h2 class="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Lese-Erfolge</h2>
                 <div id="achievements-list" class="grid grid-cols-2 gap-4">
                 <!-- Achievement 1 -->
@@ -1181,6 +1157,85 @@
                 </div>
                 </div>
             </div>
+        </div>
+
+        <!-- =================== FRIENDS SCREEN =================== -->
+        <div id="screen-friends" class="screen">
+            <header class="px-6 pt-12 pb-5 border-b border-app-surface">
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-app-accent">Zusammen lesen</p>
+                <h1 id="friends-heading" class="mt-2 text-3xl font-bold text-app-text">Freunde</h1>
+                <p class="mt-1 text-sm text-gray-400">Verbinde dich mit Freunden und vergleiche eure Fortschritte.</p>
+            </header>
+            <main class="friends-content flex-1 overflow-y-auto no-scrollbar px-6 py-6 pb-28">
+                <section id="friends-panel" class="space-y-5" aria-labelledby="friends-heading">
+                    <div class="relative overflow-hidden rounded-3xl border border-app-accent/25 bg-gradient-to-br from-app-surface via-app-surface to-app-bg p-5 sm:p-7">
+                        <div class="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-app-accent/10 blur-2xl" aria-hidden="true"></div>
+                        <div class="relative flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-app-accent/15 text-app-accent">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                            <div class="relative min-w-0">
+                                <h2 class="text-lg font-bold text-app-text sm:text-xl">Lesen macht gemeinsam noch mehr Spaß.</h2>
+                                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">Mit Freundinnen und Freunden macht Lesen noch mehr Spaß. Vergleicht eure Fortschritte und sammelt gemeinsam Wörter.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <section class="rounded-3xl border border-app-surface-light bg-app-surface p-5" aria-labelledby="friend-code-heading">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-app-bg text-app-accent" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect><path d="M3 14h7v7H3z"></path></svg>
+                                </div>
+                                <div>
+                                    <h2 id="friend-code-heading" class="font-bold text-app-text">Dein persönlicher Code</h2>
+                                    <p class="text-xs text-gray-400">Teile ihn mit deinen Freunden.</p>
+                                </div>
+                            </div>
+                            <div class="mt-5 flex items-center gap-2 rounded-2xl border border-app-surface-light bg-app-bg p-3">
+                                <code id="friend-code-value" class="block min-w-0 flex-1 truncate text-sm font-bold tracking-wide text-app-text sm:whitespace-normal sm:break-all" title="Friend ID">Wird geladen …</code>
+                                <button id="friend-code-copy-btn" type="button" onclick="app.copyFriendCode()" class="shrink-0 rounded-xl bg-app-surface px-3 py-2 text-xs font-bold text-app-text transition-all duration-200 hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Kopieren</button>
+                            </div>
+                        </section>
+
+                        <section class="rounded-3xl border border-app-surface-light bg-app-surface p-5" aria-labelledby="friend-add-heading">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-app-bg text-app-accent" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+                                </div>
+                                <div>
+                                    <h2 id="friend-add-heading" class="font-bold text-app-text">Freund hinzufügen</h2>
+                                    <p class="text-xs text-gray-400">Mit dem Code ganz einfach verbinden.</p>
+                                </div>
+                            </div>
+                            <form class="mt-5" onsubmit="app.addFriend(event)">
+                                <label for="friend-code-input" class="sr-only">Friend ID eingeben</label>
+                                <div class="flex gap-2">
+                                    <input id="friend-code-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="36" placeholder="Friend ID eingeben" class="min-w-0 flex-1 rounded-xl border border-app-surface-light bg-app-bg px-3 py-3 text-sm text-app-text placeholder:text-gray-500 focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
+                                    <button id="friend-add-btn" type="submit" class="shrink-0 rounded-xl bg-app-accent px-4 py-3 text-sm font-bold text-app-bg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">Hinzufügen</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+
+                    <section class="rounded-3xl border border-app-surface-light bg-app-surface p-5 sm:p-6" aria-labelledby="friends-leaderboard-heading">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-app-accent">Eure Lese-Challenge</p>
+                                <h2 id="friends-leaderboard-heading" class="mt-1 text-xl font-bold text-app-text">Rangliste</h2>
+                            </div>
+                            <button id="friends-refresh-btn" type="button" onclick="app.refreshFriends()" aria-label="Freundes-Rangliste aktualisieren" class="shrink-0 rounded-xl bg-app-bg px-3 py-2 text-sm font-bold text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent disabled:cursor-not-allowed disabled:opacity-50">
+                                <span class="inline-flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M4 17v-5h5"></path><path d="M5.64 9A7 7 0 0 1 17.5 6.5L20 12M4 12l2.5 5.5A7 7 0 0 0 18.36 15"></path></svg>
+                                    Aktualisieren
+                                </span>
+                            </button>
+                        </div>
+                        <p id="friends-status" class="mt-4 rounded-xl bg-app-bg px-4 py-3 text-sm text-gray-400" aria-live="polite">Freundesliste wird geladen …</p>
+                        <ol id="friends-leaderboard" class="mt-3 space-y-2" aria-label="Rangliste nach XP"></ol>
+                    </section>
+                </section>
+            </main>
         </div>
 
         <!-- =================== READY SCREEN =================== -->
@@ -1355,19 +1410,23 @@
 
         <!-- =================== BOTTOM NAV =================== -->
         <div id="global-bottom-nav" class="absolute bottom-0 w-full bg-app-bg border-t border-app-surface flex justify-around items-center py-4 px-2 pb-8 z-50" style="display:none">
-            <button id="nav-btn-library" class="nav-btn flex flex-col items-center text-app-text w-1/4" onclick="app.navigateTo('library')">
+            <button id="nav-btn-library" class="nav-btn flex flex-col items-center text-app-text w-1/5" onclick="app.navigateTo('library')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <span class="text-[11px] font-bold">Bibliothek</span>
             </button>
-            <button id="nav-btn-read" class="nav-btn flex flex-col items-center text-gray-500 w-1/4" onclick="app.resumeReading()">
+            <button id="nav-btn-read" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.resumeReading()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 <span class="text-[11px] font-bold">Lesen</span>
             </button>
-            <button id="nav-btn-achievements" class="nav-btn flex flex-col items-center text-gray-500 w-1/4" onclick="app.navigateTo('achievements')">
+            <button id="nav-btn-friends" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.navigateTo('friends')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <span class="text-[11px] font-bold">Freunde</span>
+            </button>
+            <button id="nav-btn-achievements" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.navigateTo('achievements')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                 <span class="text-[11px] font-bold">Fortschritt</span>
             </button>
-            <button id="nav-btn-profile" class="nav-btn flex flex-col items-center text-gray-500 w-1/4" onclick="app.navigateTo('profile')">
+            <button id="nav-btn-profile" class="nav-btn flex flex-col items-center text-gray-500 w-1/5" onclick="app.navigateTo('profile')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 <span class="text-[11px] font-bold">Profil</span>
             </button>
@@ -3501,7 +3560,7 @@
 
                 // Bottom Nav Sichtbarkeit
                 const navBar = document.getElementById('global-bottom-nav');
-                if (['library', 'achievements', 'profile'].includes(screenId)) {
+                if (['library', 'achievements', 'friends', 'profile'].includes(screenId)) {
                     navBar.style.display = 'flex';
                     this.updateNavHighlight(screenId);
                 } else {
@@ -3520,6 +3579,9 @@
                 if (screenId === 'library') this.renderStreakStats();
                 if (screenId === 'achievements') {
                     this.renderAchievements();
+                    window.initializeSupabaseAuth();
+                }
+                if (screenId === 'friends') {
                     window.initializeSupabaseAuth();
                     this.refreshFriends();
                 }
