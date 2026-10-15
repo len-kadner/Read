@@ -39,16 +39,12 @@
                         'app-surface-light': 'rgb(var(--app-surface-light) / <alpha-value>)'
                     },
                     fontFamily: {
-                        // Atkinson Hyperlegible ist extrem gut für Dyslexie / Leseschwierigkeiten
-                        'sans': ['"Atkinson Hyperlegible"', 'system-ui', 'sans-serif'],
+                        'sans': ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
-    
-    <!-- Google Fonts: Atkinson Hyperlegible -->
-    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -139,12 +135,12 @@
             min-height: 100dvh;
             margin: 0;
             overflow: hidden;
-            font-family: var(--app-font-family, 'Atkinson Hyperlegible', system-ui, sans-serif);
+            font-family: var(--app-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
             -webkit-tap-highlight-color: transparent;
         }
 
         #app-container .font-sans {
-            font-family: var(--app-font-family, 'Atkinson Hyperlegible', system-ui, sans-serif);
+            font-family: var(--app-font-family, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
         }
 
         html {
@@ -461,7 +457,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem; /* Etwas größer für Atkinson Font */
+            font-size: 3rem;
             font-weight: 700;
             letter-spacing: 0.02em;
             width: 100%;
@@ -1202,10 +1198,13 @@
                         </select>
                         <label for="font-family-setting" class="mt-3 block text-sm font-bold text-app-text">Schriftart</label>
                         <select id="font-family-setting" onchange="app.setFontFamily(this.value)" class="mt-2 min-h-11 w-full rounded-xl border border-app-surface-light bg-app-bg px-3 py-2 text-app-text focus:border-app-accent focus:outline-none focus:ring-1 focus:ring-app-accent">
-                            <option value="atkinson">Atkinson Hyperlegible</option>
-                            <option value="system">Systemschrift</option>
+                            <option value="system">Systemschrift (Geräteeinstellung)</option>
+                            <option value="arial">Arial / Helvetica</option>
+                            <option value="verdana">Verdana</option>
                             <option value="serif">Serifen (Georgia)</option>
+                            <option value="monospace">Monospace</option>
                         </select>
+                        <p class="mt-2 text-xs text-gray-400">Es werden nur Systemschriften und lokale Ersatzschriften verwendet – keine Schriftdateien von externen Servern geladen.</p>
                     </div>
                     <div class="mt-3 rounded-2xl bg-app-surface p-4">
                         <p class="text-base font-bold text-app-text">Design</p>
@@ -1913,7 +1912,7 @@
                 selectedTheme: 'classic',
                 colorMode: 'system',
                 fontSize: '100',
-                fontFamily: 'atkinson',
+                fontFamily: 'system',
                 animationsEnabled: true, // Tag/Nacht Zyklus
                 sceneByBook: {},
                 currentScene: 'coast',
@@ -2140,8 +2139,11 @@
                     this.state.fontSize = savedFontSize;
                 }
                 const savedFontFamily = this.readSetting('read-font-family');
-                if (['atkinson', 'system', 'serif'].includes(savedFontFamily)) {
+                if (['system', 'arial', 'verdana', 'serif', 'monospace'].includes(savedFontFamily)) {
                     this.state.fontFamily = savedFontFamily;
+                } else if (savedFontFamily === 'atkinson') {
+                    this.state.fontFamily = 'system';
+                    this.saveSetting('read-font-family', 'system');
                 }
                 this.applyColorMode(this.state.colorMode);
                 this.applyFontSize(this.state.fontSize);
@@ -2982,7 +2984,7 @@
                     throw new Error('Die Schriftgröße im Cloud-Profil ist ungültig.');
                 }
                 if (settings.fontFamily !== undefined &&
-                    !['atkinson', 'system', 'serif'].includes(settings.fontFamily)) {
+                    !['atkinson', 'system', 'arial', 'verdana', 'serif', 'monospace'].includes(settings.fontFamily)) {
                     throw new Error('Die Schriftart im Cloud-Profil ist ungültig.');
                 }
                 if (settings.animationsEnabled !== undefined && typeof settings.animationsEnabled !== 'boolean' ||
@@ -3033,7 +3035,9 @@
                 }
                 if (settings.colorMode !== undefined) this.state.colorMode = settings.colorMode;
                 if (settings.fontSize !== undefined) this.state.fontSize = settings.fontSize;
-                if (settings.fontFamily !== undefined) this.state.fontFamily = settings.fontFamily;
+                if (settings.fontFamily !== undefined) {
+                    this.state.fontFamily = settings.fontFamily === 'atkinson' ? 'system' : settings.fontFamily;
+                }
                 this.applyColorMode(this.state.colorMode);
                 this.applyFontSize(this.state.fontSize);
                 this.applyFontFamily(this.state.fontFamily);
@@ -3718,11 +3722,13 @@
 
             applyFontFamily(fontFamily) {
                 const families = {
-                    atkinson: "'Atkinson Hyperlegible', system-ui, sans-serif",
                     system: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                    serif: "Georgia, 'Times New Roman', serif"
+                    arial: "Arial, Helvetica, sans-serif",
+                    verdana: "Verdana, Geneva, sans-serif",
+                    serif: "Georgia, 'Times New Roman', serif",
+                    monospace: "ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace"
                 };
-                document.body.style.setProperty('--app-font-family', families[fontFamily] || families.atkinson);
+                document.body.style.setProperty('--app-font-family', families[fontFamily] || families.system);
             },
 
             updateAppearanceControls() {
@@ -3749,7 +3755,7 @@
             },
 
             setFontFamily(fontFamily) {
-                if (!['atkinson', 'system', 'serif'].includes(fontFamily)) return;
+                if (!['system', 'arial', 'verdana', 'serif', 'monospace'].includes(fontFamily)) return;
                 this.state.fontFamily = fontFamily;
                 this.applyFontFamily(fontFamily);
                 this.saveSetting('read-font-family', fontFamily);
@@ -4466,7 +4472,7 @@
 
                 container.style.fontSize = '';
                 previous.classList.remove('hidden');
-                // OVP (Optimal Viewing Position) Logik für Atkinson Font
+                // OVP (Optimal Viewing Position) balances the word around the recognition point.
                 // Center slightly leans left for even strings to match eye saccades.
                 let centerIndex = Math.floor((word.length - 1) / 2);
                 if (centerIndex < 0) centerIndex = 0;
