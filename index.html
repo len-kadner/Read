@@ -3010,7 +3010,10 @@
                 const totalWords = document.getElementById('profile-total-words');
                 const level = document.getElementById('profile-level');
                 if (totalWords) totalWords.textContent = this.formatWordCount(this.state.totalWordsRead);
-                if (level) level.textContent = `Level ${Math.floor(this.state.xpPoints / 500) + 1} Leser`;
+                if (level) {
+                    level.textContent = `Level ${Math.floor(this.state.xpPoints / 500) + 1} Leser`;
+                    level.hidden = !this.state.gamificationEnabled;
+                }
             },
 
             getCloudDataSnapshot() {
@@ -3534,6 +3537,7 @@
                 const challengeReward = document.getElementById('daily-challenge-reward');
                 const challengeProgress = panel.querySelector('[role="progressbar"]');
                 const challengeBar = document.getElementById('daily-challenge-bar');
+                panel.hidden = !this.state.gamificationEnabled;
                 const levelProgress = this.state.xpPoints % 500;
                 if (totalXp) totalXp.textContent = `${this.formatWordCount(this.state.xpPoints)} XP`;
                 if (levelProgressText) levelProgressText.textContent = `${levelProgress} / 500 XP bis zum nächsten Level`;
