@@ -1,4 +1,4 @@
-const CACHE_NAME = 'read-app-shell-v5';
+const CACHE_NAME = 'read-app-shell-v6';
 const APP_SHELL = [
     './',
     './index.html',
@@ -46,6 +46,19 @@ self.addEventListener('fetch', event => {
                     return response;
                 })
                 .catch(async () => (await caches.match('./index.html')) || Response.error())
+        );
+        return;
+    }
+
+    if (url.pathname.startsWith(new URL('vendor/pdfjs/', self.registration.scope).pathname)) {
+        event.respondWith(
+            caches.open(CACHE_NAME).then(async cache => {
+                const cached = await cache.match(request);
+                if (cached) return cached;
+                const response = await fetch(request);
+                if (response.ok) await cache.put(request, response.clone());
+                return response;
+            })
         );
         return;
     }

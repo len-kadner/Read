@@ -267,6 +267,12 @@
                 margin-right: auto;
             }
 
+            #screen-settings > div:nth-child(2) {
+                width: min(100%, 760px);
+                margin-left: auto;
+                margin-right: auto;
+            }
+
             #screen-ready > .flex-1,
             #screen-ready > .px-6:last-child,
             #screen-read > div.flex-1,
@@ -387,6 +393,46 @@
 
             #screen-read .rsvp-container {
                 font-size: clamp(1.75rem, 6vw, 2.75rem);
+            }
+        }
+
+        @media (max-width: 900px) and (max-height: 560px) and (orientation: landscape) {
+            #screen-read > div.flex-1 > .pt-12 {
+                padding: max(0.4rem, env(safe-area-inset-top)) 1.25rem 0.25rem;
+            }
+
+            #screen-read > div.flex-1 > .pb-12 {
+                padding: 0 1.25rem max(0.4rem, env(safe-area-inset-bottom));
+            }
+
+            #screen-read .mb-10 {
+                margin-bottom: 0.5rem;
+            }
+
+            #screen-read .rsvp-container {
+                font-size: clamp(2.5rem, 8vw, 4.5rem);
+            }
+
+            #screen-read .rsvp-container.rsvp-multiword {
+                font-size: clamp(1.25rem, 4vw, 2.25rem);
+            }
+
+            #screen-read #read-gesture-area > #play-hint {
+                margin-bottom: 0.5rem;
+            }
+
+            #screen-read #read-gesture-area > .flex {
+                gap: 0.5rem;
+            }
+
+            #screen-read #read-gesture-area > .flex > .relative {
+                width: min(100%, 64rem);
+            }
+        }
+
+        @media (max-width: 639px) and (orientation: portrait) {
+            #screen-read #landscape-reading-hint {
+                display: block;
             }
         }
 
@@ -776,20 +822,30 @@
         .bird-flock svg:nth-child(3) path { animation-delay: -0.65s; }
         .bird-flock.reverse { top: 38%; animation-name: birds-cross-reverse; animation-duration: 43s; animation-delay: -19s; opacity: 0.56; }
 
-        .lighthouse {
+        .lighthouse-scene {
             position: absolute;
             right: 7%;
             bottom: 7%;
             width: 4.2rem;
             height: 7.5rem;
+            isolation: isolate;
+            z-index: 3;
+        }
+
+        .lighthouse {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             color: rgb(242 230 204 / 0.72);
             filter: drop-shadow(0 0 0.7rem rgb(255 220 151 / 0.18));
+            z-index: 1;
         }
 
         .lighthouse-beam {
             position: absolute;
-            right: calc(7% + 2.1rem);
-            bottom: calc(7% + 2.25rem);
+            right: 50%;
+            bottom: 82%;
             width: clamp(12rem, 38vw, 30rem);
             height: clamp(6rem, 16vh, 11rem);
             transform-origin: 100% 50%;
@@ -797,10 +853,8 @@
             clip-path: polygon(100% 44%, 0 0, 0 100%, 100% 56%);
             animation: beam-sweep 13s ease-in-out infinite alternate;
             filter: blur(0.15rem);
-            z-index: 2;
+            z-index: 0;
         }
-
-        .lighthouse { z-index: 3; }
 
         .forest-landscape,
         .mountain-landscape,
@@ -885,11 +939,9 @@
         .scene-forest .fireflies { display: block; }
         .scene-forest .celestial-wheel,
         .scene-forest .bird-flock,
-        .scene-forest .lighthouse,
-        .scene-forest .lighthouse-beam,
+        .scene-forest .lighthouse-scene,
         .scene-forest .scenic-horizon,
-        .scene-mountains .lighthouse,
-        .scene-mountains .lighthouse-beam,
+        .scene-mountains .lighthouse-scene,
         .scene-mountains .scenic-horizon { display: none; }
         .scene-mountains .celestial-wheel { opacity: 0.42; }
         .scene-forest .celestial-wheel { opacity: 0.12; }
@@ -1129,28 +1181,19 @@
 
         <!-- =================== PROFILE SCREEN =================== -->
         <div id="screen-profile" class="screen">
-            <div class="px-6 pt-12 pb-4 flex items-center border-b border-app-surface">
+            <div class="px-6 pt-12 pb-4 flex items-center justify-between border-b border-app-surface">
                 <h1 class="text-2xl font-bold text-app-text">Profil</h1>
+                <button type="button" aria-label="Einstellungen öffnen" title="Einstellungen" onclick="app.navigateTo('settings')" class="flex h-11 w-11 items-center justify-center rounded-xl bg-app-surface text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9z"></path></svg>
+                </button>
             </div>
 
             <div class="px-6 py-6 flex-1 overflow-y-auto no-scrollbar pb-24">
                 <div class="flex items-center space-x-4 mb-8">
-                    <div class="w-16 h-16 bg-app-accent rounded-full flex items-center justify-center text-app-bg text-3xl font-bold">L</div>
+                    <div id="profile-avatar-initial" class="w-16 h-16 bg-app-accent rounded-full flex items-center justify-center text-app-bg text-3xl font-bold">L</div>
                     <div>
                         <h2 id="profile-display-name" class="text-xl font-bold text-app-text">Leser</h2>
                         <p id="profile-level" class="text-sm text-gray-400 font-medium">Level 1 Leser</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-8">
-                    <div class="bg-app-surface p-4 rounded-2xl">
-                        <p class="text-xs text-gray-400 mb-1 font-bold uppercase tracking-wider">Wörter gesamt</p>
-                        <p id="profile-total-words" class="text-2xl font-bold text-app-text">0</p>
-                    </div>
-                    <div class="bg-app-surface p-4 rounded-2xl">
-                        <p class="text-xs text-gray-400 mb-1 font-bold uppercase tracking-wider">Lese-Streak</p>
-                        <p id="profile-streak" class="text-2xl font-bold text-app-accent">0 Tage</p>
-                        <p class="mt-1 text-xs text-gray-400">Ein Lesetag zählt höchstens einmal.</p>
                     </div>
                 </div>
 
@@ -1158,7 +1201,7 @@
                     <div class="flex items-center justify-between gap-4">
                          <div class="min-w-0">
                             <h3 id="auth-heading" class="text-base font-bold text-app-text">Cloud-Konto</h3>
-                           <!-- <p id="auth-status-text" class="mt-1 break-all text-sm text-gray-400" aria-live="polite">Lokaler Modus</p> -->
+                            <p id="auth-status-text" class="mt-1 break-words text-sm text-gray-400" aria-live="polite">Nicht angemeldet – Fortschritt wird nicht gespeichert</p>
                         </div>
                         <button id="auth-action-btn" onclick="handleAuthClick()" type="button" class="flex shrink-0 items-center gap-2 rounded-xl bg-app-accent px-4 py-2.5 text-sm font-bold text-app-bg transition-transform active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-text">
                             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -1188,6 +1231,28 @@
                     </div>
                 </section>
 
+                <section class="mt-10" aria-labelledby="library-settings-heading">
+                    <h3 id="library-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Bücher hinzufügen</h3>
+                    <div class="rounded-2xl bg-app-surface p-4">
+                        <p class="text-base font-bold text-app-text">Bücher verwalten</p>
+                        <p class="mb-3 mt-1 text-sm text-gray-400">Wähle TXT-, EPUB- oder textbasierte PDF-Dateien direkt aus. Die Dateien werden lokal im Browser verarbeitet; ein Upload-Server ist nicht nötig. Gescannte PDFs ohne Textebene werden nicht per OCR erkannt. Hochgeladene Bücher werden unter „private“ gespeichert.</p>
+                        <input id="books-folder-input" type="file" accept=".txt,.epub,.pdf,text/plain,application/epub+zip,application/pdf" multiple class="hidden" onchange="app.importBooks(this.files)">
+                        <button onclick="document.getElementById('books-folder-input').click()" class="w-full rounded-xl bg-app-bg py-3 font-bold text-app-text active:bg-app-surface-light">Dateien auswählen</button>
+                        <p id="books-import-status" class="mt-2 text-xs text-gray-500" aria-live="polite">TXT, EPUB und textbasierte PDFs können direkt im Browser eingelesen werden. PDFs: höchstens 25 MB, 2.000 Seiten und 1,5 Millionen Textzeichen.</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div id="screen-settings" class="screen">
+            <div class="flex items-center gap-3 border-b border-app-surface px-6 pb-4 pt-12">
+                <button type="button" aria-label="Zurück zum Profil" onclick="app.navigateTo('profile')" class="flex h-11 w-11 items-center justify-center rounded-xl bg-app-surface text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path><path d="M9 12h12"></path></svg>
+                </button>
+                <h1 class="text-2xl font-bold text-app-text">Einstellungen</h1>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-6 py-6 pb-24 no-scrollbar">
                 <section class="mb-8" aria-labelledby="reading-settings-heading">
                     <h3 id="reading-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Lesen & Motivation</h3>
                     <div class="space-y-3">
@@ -1271,20 +1336,9 @@
                     </section>
                 </section>
 
-                <section class="mb-8" aria-labelledby="library-settings-heading">
-                    <h3 id="library-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Bücher</h3>
-                    <div class="rounded-2xl bg-app-surface p-4">
-                        <p class="text-base font-bold text-app-text">Bücher verwalten</p>
-                        <p class="mb-3 mt-1 text-sm text-gray-400">Wähle TXT- oder EPUB-Dateien direkt aus – ein Ordner ist nicht nötig. Die Dateien werden direkt im Browser gelesen, es ist kein Upload-Server nötig. Hochgeladene Bücher werden unter „private“ gespeichert; der Dateiname wird zum Buchtitel.</p>
-                        <input id="books-folder-input" type="file" accept=".txt,.epub,text/plain,application/epub+zip" multiple class="hidden" onchange="app.importBooks(this.files)">
-                        <button onclick="document.getElementById('books-folder-input').click()" class="w-full rounded-xl bg-app-bg py-3 font-bold text-app-text active:bg-app-surface-light">Dateien auswählen</button>
-                        <p id="books-import-status" class="mt-2 text-xs text-gray-500" aria-live="polite">TXT- und EPUB-Dateien können direkt im Browser eingelesen werden – auch auf einer statischen Website.</p>
-                    </div>
-                </section>
-
                 <section class="mb-8" aria-labelledby="help-settings-heading">
                     <h3 id="help-settings-heading" class="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Hilfe</h3>
-                    <button onclick="app.startTutorial('profile')" class="flex w-full items-center justify-between rounded-2xl bg-app-surface p-4 text-left transition-colors active:bg-app-surface-light">
+                    <button onclick="app.startTutorial('settings')" class="flex w-full items-center justify-between rounded-2xl bg-app-surface p-4 text-left transition-colors active:bg-app-surface-light">
                     <span>
                         <span class="block text-base font-bold text-app-text">Tutorial</span>
                         <span class="block text-sm text-gray-400 mt-1">Einführung und Lesetest erneut starten</span>
@@ -1488,15 +1542,17 @@
                     <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
                     <svg viewBox="0 0 40 20"><path d="M20 10C14 3 8 3 2 6"/><path d="M20 10C26 3 32 3 38 6"/></svg>
                 </div>
-                <div class="lighthouse-beam" aria-hidden="true"></div>
-                <svg class="lighthouse" viewBox="0 0 80 140" aria-hidden="true">
-                    <path d="M22 137 31 37h18l9 100Z" fill="currentColor" opacity=".82"/>
-                    <path d="M27 55h26M25 78h30M23 102h34" stroke="rgb(var(--app-bg))" stroke-width="5" opacity=".75"/>
-                    <path d="M27 37 31 24h18l4 13Z" fill="currentColor"/>
-                    <path d="M35 30h10v-9H35z" fill="rgb(var(--app-accent))"/>
-                    <path d="M29 20h22l-4-7H33z" fill="currentColor"/>
-                    <path d="M12 137h56" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
-                </svg>
+                <div class="lighthouse-scene" aria-hidden="true">
+                    <div class="lighthouse-beam"></div>
+                    <svg class="lighthouse" viewBox="0 0 80 140">
+                        <path d="M22 137 31 37h18l9 100Z" fill="currentColor" opacity=".82"/>
+                        <path d="M27 55h26M25 78h30M23 102h34" stroke="rgb(var(--app-bg))" stroke-width="5" opacity=".75"/>
+                        <path d="M27 37 31 24h18l4 13Z" fill="currentColor"/>
+                        <path d="M35 30h10v-9H35z" fill="rgb(var(--app-accent))"/>
+                        <path d="M29 20h22l-4-7H33z" fill="currentColor"/>
+                        <path d="M12 137h56" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+                    </svg>
+                </div>
             </div>
 
             <div class="flex-1 flex flex-col w-full h-full relative z-10">
@@ -1516,6 +1572,7 @@
 
                 <!-- Text Area -->
                 <div id="read-gesture-area" class="flex-1 flex flex-col justify-center items-center relative overflow-hidden" style="touch-action:none" ontouchstart="app.beginTempoGesture(event)" ontouchend="app.endTempoGesture(event)" ontouchcancel="app.cancelTempoGesture()" onclick="app.handleReadTap()">
+                    <p id="landscape-reading-hint" class="mb-2 hidden px-4 text-center text-xs font-semibold text-gray-400">Tipp: Drehe dein Handy ins Querformat für eine größere Leseansicht.</p>
                     <div id="play-hint" class="mb-8 text-gray-500 text-xs text-center px-4 tracking-wide transition-opacity duration-300 font-bold">
                         Tippe zum Pausieren
                     </div>
@@ -2754,32 +2811,99 @@
                 return { title, text };
             },
 
+            async extractPdfText(file) {
+                const maxFileBytes = 25 * 1024 * 1024;
+                const maxPages = 2000;
+                const maxExtractedCharacters = 1500000;
+                if (file.size > maxFileBytes) {
+                    throw new Error('PDF-Dateien dürfen höchstens 25 MB groß sein.');
+                }
+
+                const pdfjsLib = await import('./vendor/pdfjs/pdf.min.mjs');
+                pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.mjs', document.baseURI).href;
+                const loadingTask = pdfjsLib.getDocument({
+                    data: new Uint8Array(await file.arrayBuffer()),
+                    isEvalSupported: false,
+                    password: ''
+                });
+                let pdf;
+                try {
+                    try {
+                        pdf = await loadingTask.promise;
+                    } catch (error) {
+                        if (error.name === 'PasswordException') {
+                            throw new Error('Passwortgeschützte PDF-Dateien können nicht geöffnet werden.');
+                        }
+                        throw error;
+                    }
+                    if (pdf.numPages > maxPages) {
+                        throw new Error('PDF-Dateien dürfen höchstens 2.000 Seiten umfassen.');
+                    }
+
+                    const pages = [];
+                    let extractedCharacters = 0;
+                    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                        const page = await pdf.getPage(pageNumber);
+                        const content = await page.getTextContent();
+                        const pageTextParts = [];
+                        for (const item of content.items) {
+                            if (!('str' in item)) continue;
+                            extractedCharacters += item.str.length + 1;
+                            if (extractedCharacters > maxExtractedCharacters) {
+                                throw new Error('Aus PDF-Dateien können höchstens 1,5 Millionen Textzeichen importiert werden.');
+                            }
+                            pageTextParts.push(`${item.str}${item.hasEOL ? '\n' : ' '}`);
+                        }
+                        const pageText = pageTextParts.join('')
+                            .replace(/[ \t]+\n/g, '\n')
+                            .replace(/[ \t]{2,}/g, ' ')
+                            .trim();
+                        if (pageText) pages.push(pageText);
+                        page.cleanup();
+                    }
+
+                    const text = pages.join('\n\n').trim();
+                    if (!text) {
+                        throw new Error('Das PDF enthält keine auslesbare Textebene. Gescannte PDFs benötigen OCR und werden nicht unterstützt.');
+                    }
+                    const metadata = await pdf.getMetadata();
+                    return { title: metadata.info.Title?.trim() || '', text };
+                } finally {
+                    await (pdf?.destroy() || loadingTask.destroy());
+                }
+            },
+
             async importBooks(fileList) {
                 const files = Array.from(fileList || []);
                 if (!files.length) {
-                    this.updateBooksImportStatus('Bitte wähle mindestens eine TXT- oder EPUB-Datei aus.');
+                    this.updateBooksImportStatus('Bitte wähle mindestens eine TXT-, EPUB- oder PDF-Datei aus.');
                     return;
                 }
 
                 const imported = [];
                 const errors = [];
                 for (const file of files) {
-                    const extension = file.name.match(/\.(txt|epub)$/i)?.[1]?.toLowerCase();
+                    const extension = file.name.match(/\.(txt|epub|pdf)$/i)?.[1]?.toLowerCase();
                     if (!extension) {
-                        errors.push(`${file.name}: nur TXT- und EPUB-Dateien werden unterstützt`);
+                        errors.push(`${file.name}: nur TXT-, EPUB- und PDF-Dateien werden unterstützt`);
                         continue;
                     }
 
+                    this.updateBooksImportStatus(`„${file.name}“ wird eingelesen …`);
                     try {
-                        const epub = extension === 'epub' ? await this.extractEpubText(file) : null;
-                        const text = epub ? epub.text : await file.text();
+                        const extracted = extension === 'epub'
+                            ? await this.extractEpubText(file)
+                            : extension === 'pdf'
+                                ? await this.extractPdfText(file)
+                                : null;
+                        const text = extracted ? extracted.text : await file.text();
                         if (!text.trim()) {
                             errors.push(`${file.name}: Datei ist leer`);
                             continue;
                         }
                         const book = {
                             id: `file:private:${file.name}`,
-                            title: epub?.title || file.name.replace(/\.(txt|epub)$/i, ''),
+                            title: extracted?.title || file.name.replace(/\.(txt|epub|pdf)$/i, ''),
                             type: 'private',
                             text,
                             progress: 0,
@@ -2886,9 +3010,7 @@
                 const totalWords = document.getElementById('profile-total-words');
                 const level = document.getElementById('profile-level');
                 if (totalWords) totalWords.textContent = this.formatWordCount(this.state.totalWordsRead);
-                if (level) level.textContent = this.state.gamificationEnabled
-                    ? `Level ${Math.floor(this.state.xpPoints / 500) + 1} Leser`
-                    : 'Leser';
+                if (level) level.textContent = `Level ${Math.floor(this.state.xpPoints / 500) + 1} Leser`;
             },
 
             getCloudDataSnapshot() {
@@ -3157,6 +3279,8 @@
                 const displayName = metadataName?.trim() || user?.email?.split('@')[0] || 'Leser';
                 const profileName = document.getElementById('profile-display-name');
                 if (profileName) profileName.textContent = displayName;
+                const avatarInitial = document.getElementById('profile-avatar-initial');
+                if (avatarInitial) avatarInitial.textContent = Array.from(displayName)[0]?.toLocaleUpperCase('de-DE') || 'L';
                 if (statusText) {
                     statusText.textContent = message || (status === 'loading'
                         ? 'Cloud-Konto wird geladen …'
@@ -3392,7 +3516,6 @@
                 const thumb = document.getElementById('gamification-toggle-thumb');
                 const description = document.getElementById('gamification-setting-description');
                 if (!panel || !toggle || !thumb || !description) return;
-                panel.classList.toggle('hidden', !this.state.gamificationEnabled);
                 toggle.setAttribute('aria-checked', String(this.state.gamificationEnabled));
                 toggle.classList.toggle('bg-app-accent', this.state.gamificationEnabled);
                 toggle.classList.toggle('bg-gray-600', !this.state.gamificationEnabled);
@@ -3412,13 +3535,20 @@
                 if (totalXp) totalXp.textContent = `${this.formatWordCount(this.state.xpPoints)} XP`;
                 if (levelProgressText) levelProgressText.textContent = `${levelProgress} / 500 XP bis zum nächsten Level`;
                 if (challengeText) {
-                    challengeText.textContent = this.state.dailyChallengeCompleted
-                        ? `Challenge geschafft! ${this.state.dailyChallengeWords} von 100 Wörtern`
-                        : `${this.state.dailyChallengeWords} von 100 Wörtern heute`;
+                    challengeText.textContent = !this.state.gamificationEnabled
+                        ? 'Tages-Challenge ausgeschaltet'
+                        : this.state.dailyChallengeCompleted
+                            ? `Challenge geschafft! ${this.state.dailyChallengeWords} von 100 Wörtern`
+                            : `${this.state.dailyChallengeWords} von 100 Wörtern heute`;
                 }
-                if (challengeReward) challengeReward.textContent = this.state.dailyChallengeCompleted ? 'Geschafft · +50 XP' : '+50 XP';
-                if (challengeProgress) challengeProgress.setAttribute('aria-valuenow', String(this.state.dailyChallengeWords));
-                if (challengeBar) challengeBar.style.width = `${this.state.dailyChallengeWords}%`;
+                if (challengeReward) challengeReward.textContent = !this.state.gamificationEnabled
+                    ? 'Pausiert'
+                    : this.state.dailyChallengeCompleted ? 'Geschafft · +50 XP' : '+50 XP';
+                if (challengeProgress) challengeProgress.setAttribute(
+                    'aria-valuenow',
+                    String(this.state.gamificationEnabled ? this.state.dailyChallengeWords : 0)
+                );
+                if (challengeBar) challengeBar.style.width = `${this.state.gamificationEnabled ? this.state.dailyChallengeWords : 0}%`;
             },
 
             toggleGamification() {
@@ -3667,11 +3797,12 @@
                     </div>`,
                     `<div class="flex flex-col justify-center h-full">
                         <h2 class="text-2xl font-bold text-app-text mb-2">So funktioniert READ.</h2>
-                        <p class="text-gray-400 text-sm leading-relaxed mb-5">Das Wichtigste für deinen ersten Lesestart:</p>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-5">READ. nutzt RSVP (Rapid Serial Visual Presentation): Wörter erscheinen nacheinander an derselben Stelle. So kannst du dich auf das gerade angezeigte Wort konzentrieren und dein Lesetempo selbst einstellen.</p>
                         <div class="space-y-3">
                             <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">1. Buch auswählen</p><p class="text-sm text-gray-400 mt-1">Wähle in der Bibliothek ein Buch. Auf dem Startbildschirm kannst du dein Tempo anpassen und auf Start tippen.</p></div>
                             <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">2. In deinem Tempo lesen</p><p class="text-sm text-gray-400 mt-1">Im Lesemodus pausierst oder startest du durch Tippen auf den Text oder den Play-Button. Mit den Pfeilen springst du 10 Wörter vor oder zurück.</p></div>
                             <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">3. Tempo und Fortschritt</p><p class="text-sm text-gray-400 mt-1">Mit den Plus- und Minus-Tasten stellst du dein Tempo ein. Der Balken zeigt deinen Fortschritt. Bücher, Fortschritt und Einstellungen findest du unten.</p></div>
+                            <div class="bg-app-surface rounded-xl p-4"><p class="font-bold text-app-text">Eigene Bücher hinzufügen</p><p class="text-sm text-gray-400 mt-1">Öffne unten „Profil“, scrolle zu „Bücher hinzufügen“ und tippe auf „Dateien auswählen“. Unterstützt werden TXT-, EPUB- und textbasierte PDF-Dateien.</p></div>
                         </div>
                     </div>`
                 ];
@@ -3891,6 +4022,13 @@
                     this.renderGamification();
                     this.renderSettingsThemeOptions();
                     window.initializeSupabaseAuth();
+                }
+                if (screenId === 'settings') {
+                    this.renderSettingsThemeOptions();
+                    this.updateAppearanceControls();
+                    this.updateVisibleWordsControl();
+                    this.updateSprintModeControl();
+                    this.renderGamification();
                 }
                 if (screenId === 'library') this.renderStreakStats();
                 if (screenId === 'achievements') {
