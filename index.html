@@ -430,12 +430,6 @@
             }
         }
 
-        @media (max-width: 639px) and (orientation: portrait) {
-            #screen-read #landscape-reading-hint {
-                display: block;
-            }
-        }
-
         /* Utilities */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -856,6 +850,13 @@
             z-index: 0;
         }
 
+        #auth-status-text.auth-status-email {
+            font-size: clamp(0.65rem, 2.8vw, 0.875rem);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .forest-landscape,
         .mountain-landscape,
         .fireflies {
@@ -1183,8 +1184,8 @@
         <div id="screen-profile" class="screen">
             <div class="px-6 pt-12 pb-4 flex items-center justify-between border-b border-app-surface">
                 <h1 class="text-2xl font-bold text-app-text">Profil</h1>
-                <button type="button" aria-label="Einstellungen öffnen" title="Einstellungen" onclick="app.navigateTo('settings')" class="flex h-11 w-11 items-center justify-center rounded-xl bg-app-surface text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9z"></path></svg>
+                <button type="button" aria-label="Einstellungen öffnen" title="Einstellungen" onclick="app.navigateTo('settings')" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-app-surface text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">
+                    <svg class="h-6 w-6 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.33 2.33l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.33-2.33l.06-.06A1.65 1.65 0 0 0 5.5 15a1.65 1.65 0 0 0-1.51-1H4a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.33-2.33l.06.06a1.65 1.65 0 0 0 1.82.33h.06a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.33 2.33l-.06.06A1.65 1.65 0 0 0 18.5 9a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                 </button>
             </div>
 
@@ -1201,7 +1202,7 @@
                     <div class="flex items-center justify-between gap-4">
                          <div class="min-w-0">
                             <h3 id="auth-heading" class="text-base font-bold text-app-text">Cloud-Konto</h3>
-                            <p id="auth-status-text" class="mt-1 break-words text-sm text-gray-400" aria-live="polite">Nicht angemeldet – Fortschritt wird nicht gespeichert</p>
+                            <p id="auth-status-text" class="mt-1 min-w-0 text-sm text-gray-400" aria-live="polite">Nicht angemeldet – Fortschritt wird nicht gespeichert</p>
                         </div>
                         <button id="auth-action-btn" onclick="handleAuthClick()" type="button" class="flex shrink-0 items-center gap-2 rounded-xl bg-app-accent px-4 py-2.5 text-sm font-bold text-app-bg transition-transform active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-text">
                             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -1572,7 +1573,6 @@
 
                 <!-- Text Area -->
                 <div id="read-gesture-area" class="flex-1 flex flex-col justify-center items-center relative overflow-hidden" style="touch-action:none" ontouchstart="app.beginTempoGesture(event)" ontouchend="app.endTempoGesture(event)" ontouchcancel="app.cancelTempoGesture()" onclick="app.handleReadTap()">
-                    <p id="landscape-reading-hint" class="mb-2 hidden px-4 text-center text-xs font-semibold text-gray-400">Tipp: Drehe dein Handy ins Querformat für eine größere Leseansicht.</p>
                     <div id="play-hint" class="mb-8 text-gray-500 text-xs text-center px-4 tracking-wide transition-opacity duration-300 font-bold">
                         Tippe zum Pausieren
                     </div>
@@ -3282,11 +3282,14 @@
                 const avatarInitial = document.getElementById('profile-avatar-initial');
                 if (avatarInitial) avatarInitial.textContent = Array.from(displayName)[0]?.toLocaleUpperCase('de-DE') || 'L';
                 if (statusText) {
+                    const emailStatus = signedIn && !message && Boolean(user.email);
                     statusText.textContent = message || (status === 'loading'
                         ? 'Cloud-Konto wird geladen …'
                         : signedIn
                             ? user.email || 'Mit Google angemeldet'
                             : 'Nicht angemeldet – Fortschritt wird nicht gespeichert');
+                    statusText.classList.toggle('auth-status-email', emailStatus);
+                    statusText.title = emailStatus ? user.email : '';
                 }
                 if (!button || !buttonText) return;
 
