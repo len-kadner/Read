@@ -1,5 +1,6 @@
 -- READ. - Additive migration fuer geteilte Buchabschluesse und Emoji-Reaktionen.
 -- Im Supabase SQL Editor nach supabase_friends_setup.sql ausfuehren.
+-- Bei erneutem Ausfuehren wird auch die Reaktionsfunktion aktualisiert.
 -- Bestehende Profile, Freundschaften und Lesedaten bleiben unveraendert.
 
 create table if not exists public.friend_reading_posts (
@@ -15,7 +16,7 @@ create index if not exists friend_reading_posts_created_at_idx
 create table if not exists public.friend_reading_post_reactions (
     post_id uuid not null references public.friend_reading_posts (id) on delete cascade,
     user_id uuid not null references auth.users (id) on delete cascade,
-    emoji text not null check (emoji in ('❤️', '👏', '😂', '🔥', '📚', '😮')),
+    emoji text not null check (emoji in ('❤️', '👏', '😂', '🔥', '📚', '😮', '👍', '🚀', '🤔', '🎉', '💡', '🙏', '💯')),
     created_at timestamptz not null default now(),
     primary key (post_id, user_id, emoji)
 );
@@ -124,22 +125,24 @@ begin
     if current_user_id is null then
         raise exception 'Du musst angemeldet sein, um zu reagieren.';
     end if;
-    if p_emoji is null or p_emoji not in ('❤️', '👏', '😂', '🔥', '📚', '😮') then
+    if p_emoji is null or p_emoji not in ('❤️', '👏', '😂', '🔥', '📚', '😮', '👍', '🚀', '🤔', '🎉', '💡', '🙏', '💯') then
         raise exception 'Diese Emoji-Reaktion ist nicht verfuegbar.';
     end if;
     if not exists (
         select 1
         from public.friend_reading_posts as reading_post
         where reading_post.id = p_post_id
-          and reading_post.user_id <> current_user_id
-          and exists (
+          and (
+              reading_post.user_id = current_user_id
+              or exists (
                 select 1
                 from public.friendships as friendship
                 where (friendship.user_id = current_user_id and friendship.friend_id = reading_post.user_id)
                    or (friendship.friend_id = current_user_id and friendship.user_id = reading_post.user_id)
+              )
           )
     ) then
-        raise exception 'Auf diesen Beitrag kannst du nicht reagieren.';
+        raise exception 'Auf diesen Beitrag hast du keinen Zugriff.';
     end if;
 
     delete from public.friend_reading_post_reactions as post_reaction
