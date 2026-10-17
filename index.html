@@ -3496,7 +3496,6 @@
 
                     const reactions = document.createElement('div');
                     reactions.className = 'mt-3 flex flex-wrap items-center gap-2';
-                    const reactionCounts = new Map(post.reactions.map(reaction => [reaction.emoji, reaction.count]));
                     const myReactions = new Set(post.my_reactions);
                     const availableReactions = post.reactions
                         .slice()
@@ -3505,14 +3504,17 @@
                     const isExpanded = this.state.friendReactionExpanded.has(post.post_id);
                     const visibleReactions = isExpanded ? availableReactions : availableReactions.slice(0, 3);
                     visibleReactions.forEach(reaction => {
-                        const { emoji, count } = reaction;
+                        const { emoji, count, reactors } = reaction;
                         const reacted = myReactions.has(emoji);
                         const button = document.createElement('button');
                         button.type = 'button';
                         button.className = `min-h-9 rounded-full border px-3 py-1 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent ${reacted ? 'border-app-accent bg-app-accent/15 text-app-text' : 'border-app-surface-light bg-app-surface text-app-text hover:bg-app-surface-light'}`;
-                        button.setAttribute('aria-label', `${emoji} ${count} Reaktionen${reacted ? ', deine Reaktion' : ''}`);
+                        const reactorNames = reactors.join(', ');
+                        button.title = `${emoji}: ${reactorNames}`;
+                        button.setAttribute('aria-label', `${emoji}, ${count} ${count === 1 ? 'Reaktion' : 'Reaktionen'} von ${reactorNames}${reacted ? ', deine Reaktion' : ''}`);
                         button.setAttribute('aria-pressed', String(reacted));
-                        button.disabled = this.state.friendReactionPending.has(`${post.post_id}:${emoji}`);
+                        button.disabled = this.state.friendReactionPending.has(post.post_id) ||
+                            (myReactions.size > 0 && !reacted);
                         button.textContent = count ? `${emoji} ${count}` : emoji;
                         button.addEventListener('click', () => this.toggleFriendPostReaction(post.post_id, emoji));
                         reactions.appendChild(button);
@@ -3533,7 +3535,8 @@
                         reactions.appendChild(moreButton);
                     }
 
-                    const addReaction = document.createElement('button');
+                    if (myReactions.size === 0) {
+                        const addReaction = document.createElement('button');
                         addReaction.type = 'button';
                         addReaction.className = 'min-h-9 rounded-full border border-dashed border-app-surface-light px-3 py-1 text-sm text-gray-400 transition-colors hover:border-app-accent hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent';
                         addReaction.textContent = '+😀';
@@ -3548,8 +3551,9 @@
                             this.renderFriendFeed();
                         });
                         reactions.appendChild(addReaction);
+                    }
 
-                    if (this.state.friendReactionPickerOpen.has(post.post_id)) {
+                    if (myReactions.size === 0 && this.state.friendReactionPickerOpen.has(post.post_id)) {
                         const picker = document.createElement('div');
                         picker.className = 'flex flex-wrap gap-1 rounded-xl bg-app-surface p-1';
                         this.state.friendReactionEmojis.forEach(emoji => {
@@ -3558,7 +3562,7 @@
                             emojiButton.className = 'flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent disabled:opacity-50';
                             emojiButton.textContent = emoji;
                             emojiButton.setAttribute('aria-label', `${emoji} hinzufügen`);
-                            emojiButton.disabled = this.state.friendReactionPending.has(`${post.post_id}:${emoji}`);
+                            emojiButton.disabled = this.state.friendReactionPending.has(post.post_id);
                             emojiButton.addEventListener('click', () => {
                                 this.state.friendReactionPickerOpen.delete(post.post_id);
                                 this.toggleFriendPostReaction(post.post_id, emoji);
@@ -3607,8 +3611,12 @@
                                 !reaction ||
                                 !this.state.friendReactionEmojis.includes(reaction.emoji) ||
                                 !Number.isSafeInteger(reaction.count) ||
-                                reaction.count < 1) ||
+                                reaction.count < 1 ||
+                                !Array.isArray(reaction.reactors) ||
+                                reaction.reactors.length !== reaction.count ||
+                                reaction.reactors.some(name => typeof name !== 'string' || !name.trim())) ||
                             !Array.isArray(post.my_reactions) ||
+                            post.my_reactions.length > 1 ||
                             post.my_reactions.some(emoji => !this.state.friendReactionEmojis.includes(emoji)))) {
                         throw new Error('Der Freundes-Feed hat ein ungültiges Format.');
                     }
@@ -3629,7 +3637,7 @@
             async toggleFriendPostReaction(postId, emoji) {
                 if (!this.state.authSession || !this.state.cloudSyncReady ||
                     !this.state.friendReactionEmojis.includes(emoji)) return;
-                const key = `${postId}:${emoji}`;
+                const key = postId;
                 if (this.state.friendReactionPending.has(key)) return;
                 this.state.friendReactionPending.add(key);
                 this.renderFriendFeed();

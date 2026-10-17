@@ -1,5 +1,6 @@
 -- READ. - Additive migration fuer geteilte Buchabschluesse und Emoji-Reaktionen.
 -- Im Supabase SQL Editor nach supabase_friends_setup.sql ausfuehren.
+-- Pro Person ist je Beitrag eine Reaktion moeglich; Hover zeigt die Namen.
 -- Bei erneutem Ausfuehren wird auch die Reaktionsfunktion aktualisiert.
 -- Bestehende Profile, Freundschaften und Lesedaten bleiben unveraendert.
 
@@ -18,8 +19,27 @@ create table if not exists public.friend_reading_post_reactions (
     user_id uuid not null references auth.users (id) on delete cascade,
     emoji text not null check (emoji in ('❤️', '👏', '😂', '🔥', '📚', '😮', '👍', '🚀', '🤔', '🎉', '💡', '🙏', '💯')),
     created_at timestamptz not null default now(),
-    primary key (post_id, user_id, emoji)
+    primary key (post_id, user_id)
 );
+
+with ranked_reactions as (
+    select
+        ctid,
+        row_number() over (
+            partition by post_id, user_id
+            order by created_at desc, emoji
+        ) as reaction_rank
+    from public.friend_reading_post_reactions
+)
+delete from public.friend_reading_post_reactions as post_reaction
+using ranked_reactions
+where post_reaction.ctid = ranked_reactions.ctid
+  and ranked_reactions.reaction_rank > 1;
+
+alter table public.friend_reading_post_reactions
+    drop constraint if exists friend_reading_post_reactions_pkey;
+alter table public.friend_reading_post_reactions
+    add constraint friend_reading_post_reactions_pkey primary key (post_id, user_id);
 
 alter table public.friend_reading_posts enable row level security;
 alter table public.friend_reading_post_reactions enable row level security;
@@ -56,14 +76,34 @@ as $$
         reading_post.user_id = (select auth.uid()),
         coalesce((
             select jsonb_agg(
-                jsonb_build_object('emoji', grouped_reactions.emoji, 'count', grouped_reactions.reaction_count)
+                jsonb_build_object(
+                    'emoji', grouped_reactions.emoji,
+                    'count', grouped_reactions.reaction_count,
+                    'reactors', grouped_reactions.reactor_names
+                )
                 order by grouped_reactions.emoji
             )
             from (
-                select post_reaction.emoji, count(*)::integer as reaction_count
-                from public.friend_reading_post_reactions as post_reaction
-                where post_reaction.post_id = reading_post.id
-                group by post_reaction.emoji
+                select
+                    reaction_names.emoji,
+                    count(*)::integer as reaction_count,
+                    jsonb_agg(reaction_names.display_name order by reaction_names.display_name) as reactor_names
+                from (
+                    select
+                        post_reaction.emoji,
+                        coalesce(
+                            nullif(reactor.raw_user_meta_data ->> 'full_name', ''),
+                            nullif(reactor.raw_user_meta_data ->> 'name', ''),
+                            nullif(reactor.raw_user_meta_data ->> 'given_name', ''),
+                            nullif(split_part(reactor.email, '@', 1), ''),
+                            'Leser'
+                        ) as display_name
+                    from public.friend_reading_post_reactions as post_reaction
+                    join auth.users as reactor
+                        on reactor.id = post_reaction.user_id
+                    where post_reaction.post_id = reading_post.id
+                ) as reaction_names
+                group by reaction_names.emoji
             ) as grouped_reactions
         ), '[]'::jsonb),
         coalesce((
@@ -119,8 +159,7 @@ set search_path = ''
 as $$
 declare
     current_user_id uuid := auth.uid();
-    existing_reaction_id uuid;
-    inserted_count integer;
+    existing_emoji text;
 begin
     if current_user_id is null then
         raise exception 'Du musst angemeldet sein, um zu reagieren.';
@@ -145,21 +184,26 @@ begin
         raise exception 'Auf diesen Beitrag hast du keinen Zugriff.';
     end if;
 
-    delete from public.friend_reading_post_reactions as post_reaction
+    select post_reaction.emoji
+    into existing_emoji
+    from public.friend_reading_post_reactions as post_reaction
     where post_reaction.post_id = p_post_id
       and post_reaction.user_id = current_user_id
-      and post_reaction.emoji = p_emoji
-    returning post_reaction.post_id into existing_reaction_id;
+    for update;
 
-    if existing_reaction_id is not null then
+    if existing_emoji = p_emoji then
+        delete from public.friend_reading_post_reactions as post_reaction
+        where post_reaction.post_id = p_post_id
+          and post_reaction.user_id = current_user_id;
         return false;
     end if;
 
     insert into public.friend_reading_post_reactions (post_id, user_id, emoji)
     values (p_post_id, current_user_id, p_emoji)
-    on conflict (post_id, user_id, emoji) do nothing;
-    get diagnostics inserted_count = row_count;
-    return inserted_count = 1;
+    on conflict (post_id, user_id) do update
+        set emoji = excluded.emoji,
+            created_at = now();
+    return true;
 end;
 $$;
 
