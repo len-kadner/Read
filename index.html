@@ -1463,6 +1463,15 @@
                         <p id="friends-leaderboard-summary" class="mt-4 hidden text-sm text-gray-400" aria-live="polite"></p>
                         <ol id="friends-leaderboard" class="mt-3 divide-y divide-app-surface-light" aria-label="Rangliste nach XP"></ol>
                     </section>
+
+                    <section class="min-w-0 rounded-3xl border border-app-surface-light bg-app-surface p-5 sm:p-6" aria-labelledby="friends-feed-heading">
+                        <div>
+                            <h2 id="friends-feed-heading" class="text-xl font-bold text-app-text">Lese-Momente</h2>
+                            <p class="mt-1 text-sm text-gray-400">Geteilte Buchabschlüsse deiner Freunde.</p>
+                        </div>
+                        <p id="friends-feed-status" class="mt-4 rounded-xl bg-app-bg px-4 py-3 text-sm text-gray-400" aria-live="polite">Melde dich an, um geteilte Bücher zu sehen.</p>
+                        <div id="friends-feed" class="mt-4 space-y-3" aria-label="Geteilte Buchabschlüsse"></div>
+                    </section>
                 </section>
             </main>
         </div>
@@ -1622,6 +1631,14 @@
         </div>
 
         <!-- =================== FINISHED SCREEN =================== -->
+        <dialog id="share-book-dialog" class="w-[calc(100%-2rem)] max-w-md rounded-3xl border border-app-surface-light bg-app-surface p-6 text-app-text shadow-2xl backdrop:bg-black/70">
+            <h2 class="text-2xl font-bold">Buch beendet!</h2>
+            <p id="share-book-prompt" class="mt-3 text-sm leading-relaxed text-gray-400"></p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="app.dismissSharePrompt()" class="min-h-11 rounded-xl bg-app-bg px-4 py-2 text-sm font-bold text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Nein, danke</button>
+                <button type="button" onclick="app.confirmShareFinishedBook()" class="min-h-11 rounded-xl bg-app-accent px-4 py-2 text-sm font-bold text-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Ja, teilen</button>
+            </div>
+        </dialog>
         <div id="screen-finished" class="screen">
             <div class="flex-1 flex flex-col justify-center items-center px-6 text-center">
                 <div class="w-28 h-28 rounded-full bg-app-accent bg-opacity-20 flex items-center justify-center mb-6 text-app-accent">
@@ -1719,6 +1736,9 @@
                 app.state.friendLeaderboard = [];
                 app.state.friendsLoading = false;
                 app.state.friendStatus = 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.';
+                app.state.friendPosts = [];
+                app.state.friendFeedStatus = 'Melde dich an, um geteilte Bücher zu sehen.';
+                app.state.friendReactionPending.clear();
                 app.state.progressByBook = {};
                 app.state.totalWordsRead = 0;
                 app.state.streakDays = 0;
@@ -1812,6 +1832,28 @@
                 if (codeError) throw codeError;
                 if (leaderboardError) throw leaderboardError;
                 return { friendCode, leaderboard };
+            };
+
+            window.loadFriendReadingPosts = async function loadFriendReadingPosts() {
+                const client = await getSupabaseClient();
+                const { data, error } = await client.rpc('get_my_friend_reading_posts');
+                if (error) throw error;
+                return data;
+            };
+
+            window.shareFinishedBook = async function shareFinishedBook(bookTitle) {
+                const client = await getSupabaseClient();
+                const { error } = await client.rpc('share_finished_book', { p_book_title: bookTitle });
+                if (error) throw error;
+            };
+
+            window.toggleFriendPostReaction = async function toggleFriendPostReaction(postId, emoji) {
+                const client = await getSupabaseClient();
+                const { error } = await client.rpc('toggle_friend_reading_post_reaction', {
+                    p_post_id: postId,
+                    p_emoji: emoji
+                });
+                if (error) throw error;
             };
 
             window.addFriendByCode = async function addFriendByCode(friendCode) {
@@ -2010,6 +2052,11 @@
                 friendLeaderboard: [],
                 friendsLoading: false,
                 friendStatus: 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.',
+                friendPosts: [],
+                friendFeedStatus: 'Melde dich an, um geteilte Bücher zu sehen.',
+                friendReactionPending: new Set(),
+                friendReactionEmojis: ['❤️', '👏', '😂', '🔥', '📚', '😮'],
+                pendingShareBookId: null,
                 selectedTheme: 'classic',
                 colorMode: 'system',
                 fontSize: '100',
@@ -3334,13 +3381,19 @@
                     copyButton.classList.toggle('scale-105', this.state.friendCodeCopied);
                 }
                 if (refreshButton) refreshButton.disabled = !signedIn || !this.state.cloudSyncReady || this.state.friendsLoading;
-                if (!list) return;
-                list.replaceChildren();
+                if (list) list.replaceChildren();
                 if (summary) {
                     summary.classList.add('hidden');
                     summary.textContent = '';
                 }
-                if (!signedIn || !this.state.cloudSyncReady || this.state.friendsLoading) return;
+                if (!list) {
+                    this.renderFriendFeed();
+                    return;
+                }
+                if (!signedIn || !this.state.cloudSyncReady || this.state.friendsLoading) {
+                    this.renderFriendFeed();
+                    return;
+                }
                 if (this.state.friendLeaderboard.length === 0) {
                     const emptyMessage = document.createElement('li');
                     emptyMessage.className = 'py-5 text-sm text-gray-400';
@@ -3352,6 +3405,7 @@
                     focusButton.addEventListener('click', () => input?.focus());
                     emptyMessage.appendChild(focusButton);
                     list.appendChild(emptyMessage);
+                    this.renderFriendFeed();
                     return;
                 }
 
@@ -3396,6 +3450,130 @@
                     if (!friend.is_self) row.appendChild(createRemoveButton(friend));
                     list.appendChild(row);
                 });
+                this.renderFriendFeed();
+            },
+
+            renderFriendFeed() {
+                const status = document.getElementById('friends-feed-status');
+                const feed = document.getElementById('friends-feed');
+                if (status) status.textContent = this.state.friendFeedStatus;
+                if (!feed) return;
+                feed.replaceChildren();
+
+                this.state.friendPosts.forEach(post => {
+                    const card = document.createElement('article');
+                    card.className = 'rounded-2xl border border-app-surface-light bg-app-bg p-4';
+                    const header = document.createElement('div');
+                    header.className = 'flex flex-wrap items-center justify-between gap-2';
+                    const author = document.createElement('p');
+                    author.className = 'font-bold text-app-text';
+                    author.textContent = post.author_name;
+                    const date = document.createElement('time');
+                    date.className = 'text-xs text-gray-400';
+                    date.dateTime = post.posted_at;
+                    date.textContent = new Intl.DateTimeFormat('de-DE', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                    }).format(new Date(post.posted_at));
+                    header.append(author, date);
+
+                    const book = document.createElement('p');
+                    book.className = 'mt-3 text-sm leading-relaxed text-app-text';
+                    book.textContent = `hat „${post.book_title}“ beendet.`;
+
+                    const reactions = document.createElement('div');
+                    reactions.className = 'mt-4 flex flex-wrap gap-2';
+                    const reactionCounts = new Map(post.reactions.map(reaction => [reaction.emoji, reaction.count]));
+                    const myReactions = new Set(post.my_reactions);
+                    this.state.friendReactionEmojis.forEach(emoji => {
+                        const count = reactionCounts.get(emoji) || 0;
+                        const reacted = myReactions.has(emoji);
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = `min-h-10 rounded-full border px-3 py-1 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent ${reacted ? 'border-app-accent bg-app-accent/15 text-app-text' : 'border-app-surface-light bg-app-surface text-app-text hover:bg-app-surface-light'}`;
+                        button.setAttribute('aria-label', `${emoji} ${count} Reaktionen${reacted ? ', deine Reaktion' : ''}`);
+                        button.setAttribute('aria-pressed', String(reacted));
+                        button.disabled = post.is_own || this.state.friendReactionPending.has(`${post.post_id}:${emoji}`);
+                        button.textContent = count ? `${emoji} ${count}` : emoji;
+                        button.addEventListener('click', () => this.toggleFriendPostReaction(post.post_id, emoji));
+                        reactions.appendChild(button);
+                    });
+                    card.append(header, book, reactions);
+                    feed.appendChild(card);
+                });
+            },
+
+            async refreshFriendPosts() {
+                const userId = this.state.authSession?.user?.id;
+                if (!userId) {
+                    this.state.friendPosts = [];
+                    this.state.friendFeedStatus = 'Melde dich an, um geteilte Bücher zu sehen.';
+                    this.renderFriendFeed();
+                    return false;
+                }
+                if (!this.state.cloudSyncReady) {
+                    this.state.friendFeedStatus = 'Cloud-Konto wird geladen …';
+                    this.renderFriendFeed();
+                    return false;
+                }
+
+                this.state.friendFeedStatus = 'Geteilte Bücher werden geladen …';
+                this.renderFriendFeed();
+                try {
+                    const posts = await window.loadFriendReadingPosts();
+                    if (this.state.authSession?.user?.id !== userId) return false;
+                    if (!Array.isArray(posts) || posts.length > 100 ||
+                        posts.some(post =>
+                            !post ||
+                            typeof post.post_id !== 'string' ||
+                            !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(post.post_id) ||
+                            typeof post.author_name !== 'string' ||
+                            typeof post.book_title !== 'string' ||
+                            !post.book_title.trim() ||
+                            typeof post.posted_at !== 'string' ||
+                            !Number.isFinite(Date.parse(post.posted_at)) ||
+                            typeof post.is_own !== 'boolean' ||
+                            !Array.isArray(post.reactions) ||
+                            post.reactions.some(reaction =>
+                                !reaction ||
+                                !this.state.friendReactionEmojis.includes(reaction.emoji) ||
+                                !Number.isSafeInteger(reaction.count) ||
+                                reaction.count < 1) ||
+                            !Array.isArray(post.my_reactions) ||
+                            post.my_reactions.some(emoji => !this.state.friendReactionEmojis.includes(emoji)))) {
+                        throw new Error('Der Freundes-Feed hat ein ungültiges Format.');
+                    }
+                    this.state.friendPosts = posts;
+                    this.state.friendFeedStatus = posts.length
+                        ? `${posts.length} geteilte ${posts.length === 1 ? 'Buch' : 'Bücher'}`
+                        : 'Noch keine geteilten Bücher. Beende ein Buch und teile deinen Lesemoment!';
+                    return true;
+                } catch (error) {
+                    console.error('Freundes-Feed konnte nicht geladen werden.', error);
+                    this.state.friendFeedStatus = `Beiträge konnten nicht geladen werden: ${error.message || 'Unbekannter Fehler'}`;
+                    return false;
+                } finally {
+                    this.renderFriendFeed();
+                }
+            },
+
+            async toggleFriendPostReaction(postId, emoji) {
+                if (!this.state.authSession || !this.state.cloudSyncReady ||
+                    !this.state.friendReactionEmojis.includes(emoji)) return;
+                const key = `${postId}:${emoji}`;
+                if (this.state.friendReactionPending.has(key)) return;
+                this.state.friendReactionPending.add(key);
+                this.renderFriendFeed();
+                try {
+                    await window.toggleFriendPostReaction(postId, emoji);
+                    await this.refreshFriendPosts();
+                } catch (error) {
+                    console.error('Reaktion auf den Buchabschluss konnte nicht gespeichert werden.', error);
+                    this.state.friendFeedStatus = `Reaktion konnte nicht gespeichert werden: ${error.message || 'Unbekannter Fehler'}`;
+                } finally {
+                    this.state.friendReactionPending.delete(key);
+                    this.renderFriendFeed();
+                }
             },
 
             async refreshFriends() {
@@ -3404,11 +3582,14 @@
                     this.state.friendCode = null;
                     this.state.friendLeaderboard = [];
                     this.state.friendStatus = 'Melde dich mit deinem Cloud-Konto an, um Freunde zu nutzen.';
+                    this.state.friendPosts = [];
+                    this.state.friendFeedStatus = 'Melde dich an, um geteilte Bücher zu sehen.';
                     this.renderFriends();
                     return false;
                 }
                 if (!this.state.cloudSyncReady) {
                     this.state.friendStatus = 'Cloud-Konto wird geladen …';
+                    this.state.friendFeedStatus = 'Cloud-Konto wird geladen …';
                     this.renderFriends();
                     return false;
                 }
@@ -3436,6 +3617,7 @@
                         .map(friend => ({ ...friend, xp_points: Number(friend.xp_points) }))
                         .sort((a, b) => b.xp_points - a.xp_points || a.display_name.localeCompare(b.display_name));
                     this.state.friendStatus = 'Freunde und du – sortiert nach XP.';
+                    await this.refreshFriendPosts();
                     return true;
                 } catch (error) {
                     console.error('Freundesliste konnte nicht geladen werden.', error);
@@ -4571,6 +4753,7 @@
                         this.pause();
                         this.updateSprintScreen();
                         this.navigateTo('finished');
+                        this.promptToShareFinishedBook();
                     } else if (this.state.sprintMode && this.state.currentIndex % this.state.sprintSize === 0) {
                         this.pause();
                         this.updateSprintScreen();
@@ -4806,6 +4989,48 @@
                 const start = Math.max(0, Math.min(startIndex, this.state.words.length));
                 const end = Math.max(start, Math.min(endIndex, this.state.words.length));
                 return this.state.wordDurationPrefix[end] - this.state.wordDurationPrefix[start];
+            },
+
+            promptToShareFinishedBook() {
+                const book = this.state.books.find(item => String(item.id) === String(this.state.currentBookId));
+                const dialog = document.getElementById('share-book-dialog');
+                if (!book || !dialog || typeof dialog.showModal !== 'function') return;
+                this.state.pendingShareBookId = String(book.id);
+                document.getElementById('share-book-prompt').textContent =
+                    `Möchtest du mit deinen Freunden teilen, dass du „${book.title}“ beendet hast?`;
+                dialog.showModal();
+            },
+
+            dismissSharePrompt() {
+                const dialog = document.getElementById('share-book-dialog');
+                if (dialog?.open) dialog.close();
+                this.state.pendingShareBookId = null;
+            },
+
+            async confirmShareFinishedBook() {
+                const bookId = this.state.pendingShareBookId;
+                const dialog = document.getElementById('share-book-dialog');
+                if (dialog?.open) dialog.close();
+                this.state.pendingShareBookId = null;
+                const book = this.state.books.find(item => String(item.id) === bookId);
+                if (!book) return;
+                if (!this.state.authSession?.user) {
+                    window.alert('Zum Teilen musst du dich zuerst über dein Profil mit deinem Cloud-Konto anmelden.');
+                    return;
+                }
+                if (!this.state.cloudSyncReady) {
+                    window.alert('Dein Cloud-Konto wird noch geladen. Bitte versuche es gleich noch einmal.');
+                    return;
+                }
+
+                try {
+                    await window.shareFinishedBook(book.title);
+                    this.state.friendStatus = 'Dein Buchabschluss wurde mit deinen Freunden geteilt.';
+                    this.navigateTo('friends');
+                } catch (error) {
+                    console.error('Buchabschluss konnte nicht geteilt werden.', error);
+                    window.alert(`Dein Buch konnte nicht geteilt werden: ${error.message || 'Unbekannter Fehler'}`);
+                }
             },
 
             finishBook() {
