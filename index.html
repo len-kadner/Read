@@ -3517,7 +3517,13 @@
                             (myReactions.size > 0 && !reacted);
                         button.textContent = count ? `${emoji} ${count}` : emoji;
                         button.addEventListener('click', () => this.toggleFriendPostReaction(post.post_id, emoji));
-                        reactions.appendChild(button);
+                        const reactionGroup = document.createElement('div');
+                        reactionGroup.className = 'flex max-w-[14rem] flex-col items-center gap-1';
+                        const reactorList = document.createElement('span');
+                        reactorList.className = 'break-words text-center text-xs leading-tight text-gray-400';
+                        reactorList.textContent = reactorNames;
+                        reactionGroup.append(button, reactorList);
+                        reactions.appendChild(reactionGroup);
                     });
 
                     if (availableReactions.length > 3) {
