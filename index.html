@@ -1631,12 +1631,14 @@
         </div>
 
         <!-- =================== FINISHED SCREEN =================== -->
-        <dialog id="share-book-dialog" class="w-[calc(100%-2rem)] max-w-md rounded-3xl border border-app-surface-light bg-app-surface p-6 text-app-text shadow-2xl backdrop:bg-black/70">
-            <h2 class="text-2xl font-bold">Buch beendet!</h2>
-            <p id="share-book-prompt" class="mt-3 text-sm leading-relaxed text-gray-400"></p>
-            <div class="mt-6 flex justify-end gap-3">
-                <button type="button" onclick="app.dismissSharePrompt()" class="min-h-11 rounded-xl bg-app-bg px-4 py-2 text-sm font-bold text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Nein, danke</button>
-                <button type="button" onclick="app.confirmShareFinishedBook()" class="min-h-11 rounded-xl bg-app-accent px-4 py-2 text-sm font-bold text-app-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Ja, teilen</button>
+        <dialog id="share-book-dialog" class="w-[calc(100%-2rem)] max-w-sm rounded-[1.75rem] border border-app-surface-light bg-app-surface p-6 text-app-text shadow-2xl backdrop:bg-black/70">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-app-accent/15 text-2xl" aria-hidden="true">📖</div>
+            <h2 class="mt-4 text-center text-xl font-bold">Geschafft!</h2>
+            <p id="share-book-title" class="mt-2 text-center text-sm font-semibold text-app-text"></p>
+            <p id="share-book-prompt" class="mt-2 text-center text-sm leading-relaxed text-gray-400">Möchtest du diesen Lesemoment mit deinen Freunden teilen?</p>
+            <div class="mt-6 grid grid-cols-2 gap-3">
+                <button type="button" onclick="app.dismissSharePrompt()" class="min-h-11 rounded-xl bg-app-bg px-4 py-2 text-sm font-bold text-app-text transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Später</button>
+                <button type="button" onclick="app.confirmShareFinishedBook()" class="min-h-11 rounded-xl bg-app-accent px-4 py-2 text-sm font-bold text-app-bg transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent">Mit Freunden teilen</button>
             </div>
         </dialog>
         <div id="screen-finished" class="screen">
@@ -1739,6 +1741,8 @@
                 app.state.friendPosts = [];
                 app.state.friendFeedStatus = 'Melde dich an, um geteilte Bücher zu sehen.';
                 app.state.friendReactionPending.clear();
+                app.state.friendReactionExpanded.clear();
+                app.state.friendReactionPickerOpen.clear();
                 app.state.progressByBook = {};
                 app.state.totalWordsRead = 0;
                 app.state.streakDays = 0;
@@ -2056,6 +2060,8 @@
                 friendFeedStatus: 'Melde dich an, um geteilte Bücher zu sehen.',
                 friendReactionPending: new Set(),
                 friendReactionEmojis: ['❤️', '👏', '😂', '🔥', '📚', '😮'],
+                friendReactionExpanded: new Set(),
+                friendReactionPickerOpen: new Set(),
                 pendingShareBookId: null,
                 selectedTheme: 'classic',
                 colorMode: 'system',
@@ -3462,43 +3468,116 @@
 
                 this.state.friendPosts.forEach(post => {
                     const card = document.createElement('article');
-                    card.className = 'rounded-2xl border border-app-surface-light bg-app-bg p-4';
+                    card.className = 'rounded-2xl border border-app-surface-light/70 bg-app-bg p-4 sm:p-5';
                     const header = document.createElement('div');
-                    header.className = 'flex flex-wrap items-center justify-between gap-2';
+                    header.className = 'flex items-center gap-3';
+                    const avatar = document.createElement('span');
+                    avatar.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-accent/15 text-sm font-bold text-app-accent';
+                    avatar.textContent = Array.from(post.author_name.trim())[0]?.toLocaleUpperCase('de-DE') || 'L';
+                    avatar.setAttribute('aria-hidden', 'true');
                     const author = document.createElement('p');
-                    author.className = 'font-bold text-app-text';
-                    author.textContent = post.author_name;
+                    author.className = 'min-w-0 flex-1 text-sm leading-relaxed text-app-text';
+                    const authorName = document.createElement('strong');
+                    authorName.className = 'font-bold';
+                    authorName.textContent = post.author_name;
+                    const sentence = document.createTextNode(' hat ');
+                    const bookTitle = document.createElement('strong');
+                    bookTitle.className = 'font-semibold';
+                    bookTitle.textContent = `„${post.book_title}“`;
+                    const ending = document.createTextNode(' gelesen.');
+                    author.append(authorName, sentence, bookTitle, ending);
                     const date = document.createElement('time');
-                    date.className = 'text-xs text-gray-400';
+                    date.className = 'shrink-0 text-xs text-gray-400';
                     date.dateTime = post.posted_at;
                     date.textContent = new Intl.DateTimeFormat('de-DE', {
                         dateStyle: 'medium',
                         timeStyle: 'short'
                     }).format(new Date(post.posted_at));
-                    header.append(author, date);
-
-                    const book = document.createElement('p');
-                    book.className = 'mt-3 text-sm leading-relaxed text-app-text';
-                    book.textContent = `hat „${post.book_title}“ beendet.`;
+                    header.append(avatar, author, date);
 
                     const reactions = document.createElement('div');
-                    reactions.className = 'mt-4 flex flex-wrap gap-2';
+                    reactions.className = 'mt-3 flex flex-wrap items-center gap-2';
                     const reactionCounts = new Map(post.reactions.map(reaction => [reaction.emoji, reaction.count]));
                     const myReactions = new Set(post.my_reactions);
-                    this.state.friendReactionEmojis.forEach(emoji => {
-                        const count = reactionCounts.get(emoji) || 0;
+                    const availableReactions = post.reactions
+                        .slice()
+                        .sort((left, right) => right.count - left.count ||
+                            this.state.friendReactionEmojis.indexOf(left.emoji) - this.state.friendReactionEmojis.indexOf(right.emoji));
+                    const isExpanded = this.state.friendReactionExpanded.has(post.post_id);
+                    const visibleReactions = isExpanded ? availableReactions : availableReactions.slice(0, 3);
+                    visibleReactions.forEach(reaction => {
+                        const { emoji, count } = reaction;
                         const reacted = myReactions.has(emoji);
                         const button = document.createElement('button');
                         button.type = 'button';
-                        button.className = `min-h-10 rounded-full border px-3 py-1 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent ${reacted ? 'border-app-accent bg-app-accent/15 text-app-text' : 'border-app-surface-light bg-app-surface text-app-text hover:bg-app-surface-light'}`;
+                        button.className = `min-h-9 rounded-full border px-3 py-1 text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent ${reacted ? 'border-app-accent bg-app-accent/15 text-app-text' : 'border-app-surface-light bg-app-surface text-app-text hover:bg-app-surface-light'}`;
                         button.setAttribute('aria-label', `${emoji} ${count} Reaktionen${reacted ? ', deine Reaktion' : ''}`);
                         button.setAttribute('aria-pressed', String(reacted));
                         button.disabled = post.is_own || this.state.friendReactionPending.has(`${post.post_id}:${emoji}`);
                         button.textContent = count ? `${emoji} ${count}` : emoji;
-                        button.addEventListener('click', () => this.toggleFriendPostReaction(post.post_id, emoji));
+                        button.addEventListener('click', () => {
+                            if (!isExpanded && availableReactions.length > 3) {
+                                this.state.friendReactionExpanded.add(post.post_id);
+                                this.renderFriendFeed();
+                                return;
+                            }
+                            this.toggleFriendPostReaction(post.post_id, emoji);
+                        });
                         reactions.appendChild(button);
                     });
-                    card.append(header, book, reactions);
+
+                    if (availableReactions.length > 3) {
+                        const moreButton = document.createElement('button');
+                        moreButton.type = 'button';
+                        moreButton.className = 'min-h-9 rounded-full px-2 text-xs font-semibold text-gray-400 transition-colors hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent';
+                        moreButton.textContent = isExpanded ? 'Weniger' : `+${availableReactions.length - 3}`;
+                        moreButton.setAttribute('aria-expanded', String(isExpanded));
+                        moreButton.setAttribute('aria-label', isExpanded ? 'Weniger Reaktionen anzeigen' : 'Alle Reaktionen anzeigen');
+                        moreButton.addEventListener('click', () => {
+                            if (isExpanded) this.state.friendReactionExpanded.delete(post.post_id);
+                            else this.state.friendReactionExpanded.add(post.post_id);
+                            this.renderFriendFeed();
+                        });
+                        reactions.appendChild(moreButton);
+                    }
+
+                    if (!post.is_own) {
+                        const addReaction = document.createElement('button');
+                        addReaction.type = 'button';
+                        addReaction.className = 'min-h-9 rounded-full border border-dashed border-app-surface-light px-3 py-1 text-sm text-gray-400 transition-colors hover:border-app-accent hover:text-app-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent';
+                        addReaction.textContent = '+😀';
+                        addReaction.setAttribute('aria-expanded', String(this.state.friendReactionPickerOpen.has(post.post_id)));
+                        addReaction.setAttribute('aria-label', 'Emoji-Reaktion hinzufügen');
+                        addReaction.addEventListener('click', () => {
+                            if (this.state.friendReactionPickerOpen.has(post.post_id)) {
+                                this.state.friendReactionPickerOpen.delete(post.post_id);
+                            } else {
+                                this.state.friendReactionPickerOpen.add(post.post_id);
+                            }
+                            this.renderFriendFeed();
+                        });
+                        reactions.appendChild(addReaction);
+
+                        if (this.state.friendReactionPickerOpen.has(post.post_id)) {
+                            const picker = document.createElement('div');
+                            picker.className = 'flex flex-wrap gap-1 rounded-xl bg-app-surface p-1';
+                            this.state.friendReactionEmojis.forEach(emoji => {
+                                const emojiButton = document.createElement('button');
+                                emojiButton.type = 'button';
+                                emojiButton.className = 'flex h-9 w-9 items-center justify-center rounded-lg text-lg transition-colors hover:bg-app-surface-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-app-accent disabled:opacity-50';
+                                emojiButton.textContent = emoji;
+                                emojiButton.setAttribute('aria-label', `${emoji} hinzufügen`);
+                                emojiButton.disabled = this.state.friendReactionPending.has(`${post.post_id}:${emoji}`);
+                                emojiButton.addEventListener('click', () => {
+                                    this.state.friendReactionPickerOpen.delete(post.post_id);
+                                    this.toggleFriendPostReaction(post.post_id, emoji);
+                                });
+                                picker.appendChild(emojiButton);
+                            });
+                            reactions.appendChild(picker);
+                        }
+                    }
+                    card.append(header, reactions);
                     feed.appendChild(card);
                 });
             },
@@ -4996,8 +5075,7 @@
                 const dialog = document.getElementById('share-book-dialog');
                 if (!book || !dialog || typeof dialog.showModal !== 'function') return;
                 this.state.pendingShareBookId = String(book.id);
-                document.getElementById('share-book-prompt').textContent =
-                    `Möchtest du mit deinen Freunden teilen, dass du „${book.title}“ beendet hast?`;
+                document.getElementById('share-book-title').textContent = `Du hast „${book.title}“ gelesen.`;
                 dialog.showModal();
             },
 
