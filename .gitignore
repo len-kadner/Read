@@ -1,3 +1,4 @@
 /Unit-Testing/
 supabase_friends_setup.sql
 /Testumgebung/
+supabase_friend_posts_setup.sql
